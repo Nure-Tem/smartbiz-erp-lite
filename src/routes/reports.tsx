@@ -1,0 +1,122 @@
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { AppLayout } from "@/components/layout/app-layout";
+import { PageHeader } from "@/components/common/page-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { revenueTrend, salesByCategory, weeklyOrders } from "@/lib/mock/db";
+
+export const Route = createFileRoute("/reports")({
+  head: () => ({
+    meta: [
+      { title: "Reports — SmartBiz ERP Lite" },
+      { name: "description", content: "Visual reports on revenue, orders and category mix." },
+      { property: "og:title", content: "Reports — SmartBiz ERP Lite" },
+      { property: "og:description", content: "Charts for revenue trends and category performance." },
+    ],
+  }),
+  component: ReportsPage,
+});
+
+const tooltipStyle = {
+  background: "var(--color-popover)",
+  border: "1px solid var(--color-border)",
+  borderRadius: 12,
+  color: "var(--color-popover-foreground)",
+};
+
+const PIE_COLORS = [
+  "var(--color-primary)",
+  "var(--color-accent)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
+];
+
+function ReportsPage() {
+  return (
+    <AppLayout>
+      <PageHeader
+        title="Reports"
+        description="Placeholder analytics — wired to live data once the backend is connected."
+      />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="rounded-xl">
+          <CardHeader>
+            <CardTitle>Revenue by month</CardTitle>
+            <CardDescription>Last 7 months</CardDescription>
+          </CardHeader>
+          <CardContent className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={revenueTrend} margin={{ left: -18, right: 8, top: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} />
+                <YAxis tickLine={false} axisLine={false} fontSize={12} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Line type="monotone" dataKey="revenue" stroke="var(--color-primary)" strokeWidth={2} />
+                <Line type="monotone" dataKey="cost" stroke="var(--color-accent)" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl">
+          <CardHeader>
+            <CardTitle>Sales by category</CardTitle>
+            <CardDescription>Share of revenue</CardDescription>
+          </CardHeader>
+          <CardContent className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Tooltip contentStyle={tooltipStyle} />
+                <Pie
+                  data={salesByCategory}
+                  dataKey="value"
+                  nameKey="category"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={3}
+                >
+                  {salesByCategory.map((entry, i) => (
+                    <Cell key={entry.category} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Orders per day</CardTitle>
+            <CardDescription>Current week</CardDescription>
+          </CardHeader>
+          <CardContent className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyOrders} margin={{ left: -22, right: 8, top: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={12} />
+                <YAxis tickLine={false} axisLine={false} fontSize={12} />
+                <Tooltip cursor={{ fill: "var(--color-muted)" }} contentStyle={tooltipStyle} />
+                <Bar dataKey="orders" fill="var(--color-accent)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+    </AppLayout>
+  );
+}
