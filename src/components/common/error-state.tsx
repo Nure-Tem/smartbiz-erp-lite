@@ -8,7 +8,7 @@ export function ErrorState({
 }: {
   title?: string | undefined;
   description?: string | undefined;
-  onRetry?: () => void | undefined;
+  onRetry?: (() => void) | undefined;
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-12 text-center">

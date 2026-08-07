@@ -31,7 +31,7 @@ export function DataTable<T extends { id: string }>({
   rows: T[];
   isLoading?: boolean | undefined;
   isError?: boolean | undefined;
-  onRetry?: () => void | undefined;
+  onRetry?: (() => void) | undefined;
   emptyState?: ReactNode | undefined;
   footer?: ReactNode | undefined;
 }) {
