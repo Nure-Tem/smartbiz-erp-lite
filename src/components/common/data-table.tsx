@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 export interface Column<T> {
   key: string;
   header: string;
-  className?: string;
+  className?: string | undefined;
   cell: (row: T) => ReactNode;
 }
 
@@ -29,11 +29,11 @@ export function DataTable<T extends { id: string }>({
 }: {
   columns: Column<T>[];
   rows: T[];
-  isLoading?: boolean;
-  isError?: boolean;
-  onRetry?: () => void;
-  emptyState?: ReactNode;
-  footer?: ReactNode;
+  isLoading?: boolean | undefined;
+  isError?: boolean | undefined;
+  onRetry?: () => void | undefined;
+  emptyState?: ReactNode | undefined;
+  footer?: ReactNode | undefined;
 }) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">

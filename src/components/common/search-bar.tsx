@@ -10,8 +10,8 @@ export function SearchBar({
 }: {
   value: string;
   onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
+  placeholder?: string | undefined;
+  className?: string | undefined;
 }) {
   return (
     <div className={cn("relative w-full sm:max-w-xs", className)}>

@@ -5,8 +5,8 @@ export function LoadingSpinner({
   className,
   label,
 }: {
-  className?: string;
-  label?: string;
+  className?: string | undefined;
+  label?: string | undefined;
 }) {
   return (
     <div className={cn("flex flex-col items-center justify-center gap-3 py-12", className)}>

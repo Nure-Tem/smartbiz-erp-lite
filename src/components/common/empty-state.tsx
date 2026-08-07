@@ -9,11 +9,11 @@ export function EmptyState({
   actionLabel,
   onAction,
 }: {
-  icon?: LucideIcon;
+  icon?: LucideIcon | undefined;
   title: string;
-  description?: string;
-  actionLabel?: string;
-  onAction?: () => void;
+  description?: string | undefined;
+  actionLabel?: string | undefined;
+  onAction?: () => void | undefined;
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border px-6 py-14 text-center">

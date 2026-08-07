@@ -6,9 +6,9 @@ export function ErrorState({
   description = "We couldn't load this data. Please try again.",
   onRetry,
 }: {
-  title?: string;
-  description?: string;
-  onRetry?: () => void;
+  title?: string | undefined;
+  description?: string | undefined;
+  onRetry?: () => void | undefined;
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-12 text-center">
