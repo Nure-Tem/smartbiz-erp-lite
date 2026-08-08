@@ -9,6 +9,13 @@ import { DataTable, type Column } from "@/components/common/data-table";
 import { EmptyState } from "@/components/common/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { productsQuery } from "@/lib/mock/queries";
 import type { Product } from "@/lib/mock/types";
 
