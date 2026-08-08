@@ -33,13 +33,20 @@ function statusOf(p: Product) {
 function InventoryPage() {
   const products = useQuery(productsQuery);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const keyOf = (p: Product) =>
+    p.stock === 0 ? "out" : p.stock <= p.minStock ? "low" : "in";
 
   const rows = useMemo(() => {
     const term = search.trim().toLowerCase();
     return (products.data ?? []).filter(
-      (p) => !term || p.name.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term),
+      (p) =>
+        (!term || p.name.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term)) &&
+        (statusFilter === "all" || keyOf(p) === statusFilter),
     );
-  }, [products.data, search]);
+  }, [products.data, search, statusFilter]);
+
 
   const columns: Column<Product>[] = [
     {
