@@ -90,15 +90,35 @@ function InventoryPage() {
         title="Inventory"
         description="Stock health across your catalogue. Transactions arrive later."
       />
-      <SearchBar value={search} onChange={setSearch} placeholder="Search product or SKU" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <SearchBar value={search} onChange={setSearch} placeholder="Search product or SKU" />
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48" aria-label="Filter by stock status">
+            <SelectValue placeholder="Stock status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="in">In stock</SelectItem>
+            <SelectItem value="low">Low stock</SelectItem>
+            <SelectItem value="out">Out of stock</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <DataTable
         columns={columns}
         rows={rows}
         isLoading={products.isLoading}
         isError={products.isError}
         onRetry={() => products.refetch()}
-        emptyState={<EmptyState icon={Warehouse} title="Nothing in inventory yet" />}
+        emptyState={
+          <EmptyState
+            icon={Warehouse}
+            title="No products match these filters"
+            description="Try a different search term or stock status."
+          />
+        }
       />
+
     </AppLayout>
   );
 }
