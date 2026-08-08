@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
   Bar,
   BarChart,
@@ -17,6 +18,8 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { PageHeader } from "@/components/common/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { revenueTrend, salesByCategory, weeklyOrders } from "@/lib/mock/db";
+import { productsQuery, salesQuery } from "@/lib/mock/queries";
+import { currency } from "@/lib/format";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
@@ -46,12 +49,58 @@ const PIE_COLORS = [
 ];
 
 function ReportsPage() {
+  const sales = useQuery(salesQuery);
+  const products = useQuery(productsQuery);
+
+  const salesRows = sales.data ?? [];
+  const productRows = products.data ?? [];
+
+  const revenue = revenueTrend.reduce((s, r) => s + r.revenue, 0);
+  const cost = revenueTrend.reduce((s, r) => s + r.cost, 0);
+  const invoiceTotal = salesRows.reduce((s, r) => s + r.total, 0);
+  const avgOrder = salesRows.length ? invoiceTotal / salesRows.length : 0;
+  const lowStock = productRows.filter((p) => p.stock <= p.minStock).length;
+  const stockValue = productRows.reduce((s, p) => s + p.buyingPrice * p.stock, 0);
+
+  const summary = [
+    { label: "Revenue (7 months)", value: currency(revenue), hint: "Mock trend data" },
+    { label: "Gross margin", value: currency(revenue - cost), hint: "Revenue minus cost" },
+    {
+      label: "Invoices",
+      value: String(salesRows.length),
+      hint: `Avg ${currency(avgOrder)} per sale`,
+    },
+    {
+      label: "Inventory value",
+      value: currency(stockValue),
+      hint: `${productRows.length} products · ${lowStock} low stock`,
+    },
+  ];
+
   return (
     <AppLayout>
       <PageHeader
         title="Reports"
         description="Placeholder analytics — wired to live data once the backend is connected."
       />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {summary.map((s) => (
+          <Card key={s.label} className="rounded-xl">
+            <CardHeader className="pb-2">
+              <CardDescription>{s.label}</CardDescription>
+              <CardTitle className="text-2xl">
+                {sales.isLoading || products.isLoading ? "—" : s.value}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">{s.hint}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="rounded-xl">

@@ -9,6 +9,13 @@ import { DataTable, type Column } from "@/components/common/data-table";
 import { EmptyState } from "@/components/common/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { productsQuery } from "@/lib/mock/queries";
 import type { Product } from "@/lib/mock/types";
 
@@ -33,13 +40,20 @@ function statusOf(p: Product) {
 function InventoryPage() {
   const products = useQuery(productsQuery);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const keyOf = (p: Product) =>
+    p.stock === 0 ? "out" : p.stock <= p.minStock ? "low" : "in";
 
   const rows = useMemo(() => {
     const term = search.trim().toLowerCase();
     return (products.data ?? []).filter(
-      (p) => !term || p.name.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term),
+      (p) =>
+        (!term || p.name.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term)) &&
+        (statusFilter === "all" || keyOf(p) === statusFilter),
     );
-  }, [products.data, search]);
+  }, [products.data, search, statusFilter]);
+
 
   const columns: Column<Product>[] = [
     {
@@ -83,15 +97,35 @@ function InventoryPage() {
         title="Inventory"
         description="Stock health across your catalogue. Transactions arrive later."
       />
-      <SearchBar value={search} onChange={setSearch} placeholder="Search product or SKU" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <SearchBar value={search} onChange={setSearch} placeholder="Search product or SKU" />
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48" aria-label="Filter by stock status">
+            <SelectValue placeholder="Stock status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="in">In stock</SelectItem>
+            <SelectItem value="low">Low stock</SelectItem>
+            <SelectItem value="out">Out of stock</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <DataTable
         columns={columns}
         rows={rows}
         isLoading={products.isLoading}
         isError={products.isError}
         onRetry={() => products.refetch()}
-        emptyState={<EmptyState icon={Warehouse} title="Nothing in inventory yet" />}
+        emptyState={
+          <EmptyState
+            icon={Warehouse}
+            title="No products match these filters"
+            description="Try a different search term or stock status."
+          />
+        }
       />
+
     </AppLayout>
   );
 }

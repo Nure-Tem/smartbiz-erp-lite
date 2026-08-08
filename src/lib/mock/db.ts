@@ -109,7 +109,19 @@ export const db = {
   },
   sales: {
     list: async () => (await delay(), [...sales]),
+    create: async (input: Omit<Sale, "id" | "invoiceNumber">) => {
+      await delay();
+      const next = 149 + sales.filter((s) => s.invoiceNumber.startsWith("INV-2026-")).length - 7;
+      const row: Sale = {
+        ...input,
+        id: uid(),
+        invoiceNumber: `INV-2026-${String(next).padStart(4, "0")}`,
+      };
+      sales = [row, ...sales];
+      return row;
+    },
   },
+
 };
 
 export const revenueTrend = [
