@@ -18,6 +18,8 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { PageHeader } from "@/components/common/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { revenueTrend, salesByCategory, weeklyOrders } from "@/lib/mock/db";
+import { productsQuery, salesQuery } from "@/lib/mock/queries";
+import { currency } from "@/lib/format";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
