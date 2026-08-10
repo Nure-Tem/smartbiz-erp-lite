@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { listProducts } from "./api/products";
 import { listCategories } from "./api/categories";
+import { listCustomers } from "./api/customers";
 import { db } from "./mock/db";
 
 /**
@@ -23,11 +24,11 @@ export const categoriesQuery = queryOptions({
 
 /**
  * Query options for customers
- * Still using mock data until customers are connected
+ * Uses Supabase API instead of mock data
  */
 export const customersQuery = queryOptions({
   queryKey: ["customers"],
-  queryFn: () => db.customers.list(),
+  queryFn: listCustomers,
 });
 
 /**

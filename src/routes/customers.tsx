@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { db } from "@/lib/mock/db";
+import { createCustomer, updateCustomer, deleteCustomer } from "@/lib/api/customers";
 import { customersQuery } from "@/lib/queries";
 import { currency } from "@/lib/format";
 import type { Customer } from "@/lib/mock/types";
@@ -74,22 +74,31 @@ function CustomersPage() {
   const saveMutation = useMutation({
     mutationFn: (values: FormValues) => {
       const parsed = schema.parse(values);
-      return editing ? db.customers.update(editing.id, parsed) : db.customers.create(parsed);
+      return editing ? updateCustomer(editing.id, parsed) : createCustomer(parsed);
     },
     onSuccess: () => {
       invalidate();
       toast.success(editing ? "Customer updated" : "Customer created");
       setDialogOpen(false);
     },
-    onError: () => toast.error("Could not save customer"),
+    onError: (error: Error) => {
+      toast.error("Could not save customer", {
+        description: error.message,
+      });
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => db.customers.remove(id),
+    mutationFn: deleteCustomer,
     onSuccess: () => {
       invalidate();
       toast.success("Customer deleted");
       setDeleting(null);
+    },
+    onError: (error: Error) => {
+      toast.error("Could not delete customer", {
+        description: error.message,
+      });
     },
   });
 
