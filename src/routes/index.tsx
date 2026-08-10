@@ -215,8 +215,8 @@ function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge className={statusTone[sale.paymentStatus]} variant="secondary">
-                        {sale.paymentStatus}
+                      <Badge className={statusTone[sale.paymentMethod]} variant="secondary">
+                        {sale.paymentMethod}
                       </Badge>
                       <span className="text-sm font-semibold text-foreground">
                         {currency(sale.total)}
