@@ -27,7 +27,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       // Fallback to basic user info if profile fetch fails
       const authUser: AuthUser = {
         id: user.id,
-        name: user.user_metadata?.name || user.email?.split('@')[0]?.replace(/[._-]/g, ' ') || 'User',
+        name: user.user_metadata?.['name'] || user.email?.split('@')[0]?.replace(/[._-]/g, ' ') || 'User',
         email: user.email || '',
         role: 'admin', // Default fallback
       };
