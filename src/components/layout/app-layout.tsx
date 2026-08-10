@@ -9,7 +9,6 @@ import {
   Menu,
   Moon,
   Package,
-  Receipt,
   Settings,
   ShoppingCart,
   Sun,
@@ -29,8 +28,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";
-import { useMockAuth } from "@/hooks/use-mock-auth";
-import { mockSignOut } from "@/lib/mock/auth";
+import { useAuth } from "@/hooks/use-auth";
+import { signOut } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -88,8 +87,9 @@ function Brand() {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const { theme, toggle } = useTheme();
-  const { user } = useMockAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const initials = (user?.name ?? "Guest")
@@ -104,17 +104,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-sidebar lg:flex">
         <Brand />
         <NavLinks />
-        <div className="mt-auto p-4">
-          <div className="rounded-xl bg-primary/10 p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Receipt className="size-4 text-primary" />
-              Demo workspace
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Running on sample data until your backend is connected.
-            </p>
-          </div>
-        </div>
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -164,13 +153,24 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => {
-                    mockSignOut();
-                    navigate({ to: "/login" });
+                  onClick={async () => {
+                    setIsSigningOut(true);
+                    try {
+                      const { error } = await signOut();
+                      if (error) {
+                        console.error('Sign out error:', error);
+                      }
+                      navigate({ to: "/login" });
+                    } catch (error) {
+                      console.error('Failed to sign out:', error);
+                    } finally {
+                      setIsSigningOut(false);
+                    }
                   }}
+                  disabled={isSigningOut}
                 >
                   <LogOut className="size-4" />
-                  Sign out
+                  {isSigningOut ? "Signing out..." : "Sign out"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

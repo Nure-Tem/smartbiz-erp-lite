@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Auth Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        input, button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>Supabase Auth Test</h1>
+    
+    <h2>1. Test Registration</h2>
+    <input type="text" id="regName" placeholder="Full Name" value="Test User">
+    <input type="email" id="regEmail" placeholder="Email" value="test@example.com">
+    <input type="password" id="regPassword" placeholder="Password" value="test1234">
+    <button onclick="testRegistration()">Test Register</button>
+    
+    <h2>2. Test Login</h2>
+    <input type="email" id="loginEmail" placeholder="Email" value="test@example.com">
+    <input type="password" id="loginPassword" placeholder="Password" value="test1234">
+    <button onclick="testLogin()">Test Login</button>
+    
+    <h2>3. Check Current Session</h2>
+    <button onclick="checkSession()">Check Session</button>
+    
+    <h2>4. Test Sign Out</h2>
+    <button onclick="testSignOut()">Sign Out</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://atbuzzupqxtleaorgfpu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YnV6enVwcXh0bGVhb3JnZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NTUzMjQsImV4cCI6MjEwMTUzMTMyNH0.rrEycRcmNHxPVKUp6EUGEmjGuEkJCHPkaoeUI2Ivbq8';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        function showResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = isError ? 'error' : 'success';
+        }
+        
+        async function testRegistration() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            
+            showResult('Registering...');
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            name: name,
+                            company: 'Test Company',
+                            role: 'admin'
+                        }
+                    }
+                });
+                
+                if (error) {
+                    showResult('Registration Error:\n' + JSON.stringify(error, null, 2), true);
+                } else {
+                    showResult('Registration Success!\n' + JSON.stringify(data, null, 2));
+                }
+            } catch (err) {
+                showResult('Unexpected Error:\n' + err.toString(), true);
+            }
+        }
+        
+        async function testLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            showResult('Logging in...');
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    showResult('Login Error:\n' + JSON.stringify(error, null, 2), true);
+                } else {
+                    showResult('Login Success!\n' + JSON.stringify(data, null, 2));
+                }
+            } catch (err) {
+                showResult('Unexpected Error:\n' + err.toString(), true);
+            }
+        }
+        
+        async function checkSession() {
+            showResult('Checking session...');
+            
+            try {
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    showResult('Session Error:\n' + JSON.stringify(error, null, 2), true);
+                } else if (data.session) {
+                    showResult('Session Found!\n' + JSON.stringify(data.session, null, 2));
+                } else {
+                    showResult('No active session');
+                }
+            } catch (err) {
+                showResult('Unexpected Error:\n' + err.toString(), true);
+            }
+        }
+        
+        async function testSignOut() {
+            showResult('Signing out...');
+            
+            try {
+                const { error } = await supabase.auth.signOut();
+                
+                if (error) {
+                    showResult('Sign Out Error:\n' + JSON.stringify(error, null, 2), true);
+                } else {
+                    showResult('Signed out successfully!');
+                }
+            } catch (err) {
+                showResult('Unexpected Error:\n' + err.toString(), true);
+            }
+        }
+    </script>
+</body>
+</html>

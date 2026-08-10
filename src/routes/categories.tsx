@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -24,11 +24,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { db } from "@/lib/mock/db";
-import { categoriesQuery, productsQuery } from "@/lib/mock/queries";
+import { categoriesQuery, productsQuery } from "@/lib/queries";
+import { createCategory, updateCategory, deleteCategory } from "@/lib/api/categories";
 import type { Category } from "@/lib/mock/types";
+import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/categories")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "Categories — SmartBiz ERP Lite" },
@@ -64,21 +66,30 @@ function CategoriesPage() {
 
   const saveMutation = useMutation({
     mutationFn: (values: FormValues) =>
-      editing ? db.categories.update(editing.id, values) : db.categories.create(values),
+      editing ? updateCategory(editing.id, values) : createCategory(values),
     onSuccess: () => {
       invalidate();
       toast.success(editing ? "Category updated" : "Category created");
       setDialogOpen(false);
     },
-    onError: () => toast.error("Could not save category"),
+    onError: (error: Error) => {
+      toast.error("Could not save category", {
+        description: error.message,
+      });
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => db.categories.remove(id),
+    mutationFn: deleteCategory,
     onSuccess: () => {
       invalidate();
       toast.success("Category deleted");
       setDeleting(null);
+    },
+    onError: (error: Error) => {
+      toast.error("Could not delete category", {
+        description: error.message,
+      });
     },
   });
 

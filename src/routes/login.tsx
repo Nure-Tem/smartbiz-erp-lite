@@ -1,15 +1,18 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/layout/auth-layout";
-import { mockSignIn } from "@/lib/mock/auth";
+import { signIn } from "@/lib/auth";
+import { redirectIfAuthenticated } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/login")({
+  beforeLoad: redirectIfAuthenticated,
   head: () => ({
     meta: [
       { title: "Sign in — SmartBiz ERP Lite" },
@@ -28,21 +31,43 @@ const schema = z.object({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { email: "owner@smartbiz.app", password: "demo1234" },
+    defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = form.handleSubmit((values) => {
-    mockSignIn(values.email);
-    toast.success("Welcome back", { description: "Signed in with the demo account." });
-    navigate({ to: "/" });
+  const onSubmit = form.handleSubmit(async (values) => {
+    setIsLoading(true);
+    try {
+      const { user, error } = await signIn(values.email, values.password);
+      
+      if (error) {
+        toast.error("Sign in failed", { 
+          description: error.message || "Please check your credentials and try again." 
+        });
+        return;
+      }
+
+      if (user) {
+        toast.success("Welcome back", { 
+          description: `Signed in as ${user.email}` 
+        });
+        navigate({ to: "/" });
+      }
+    } catch (error) {
+      toast.error("Sign in failed", { 
+        description: "An unexpected error occurred. Please try again." 
+      });
+    } finally {
+      setIsLoading(false);
+    }
   });
 
   return (
     <AuthLayout
       title="Sign in"
-      subtitle="Use the prefilled demo credentials to explore the app."
+      subtitle="Enter your credentials to access your workspace."
       footer={
         <>
           No account?{" "}
@@ -71,8 +96,8 @@ function LoginPage() {
           <Input id="password" type="password" {...form.register("password")} />
           <p className="text-xs text-destructive">{form.formState.errors.password?.message}</p>
         </div>
-        <Button type="submit" className="w-full">
-          Sign in
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Signing in..." : "Sign in"}
         </Button>
       </form>
     </AuthLayout>

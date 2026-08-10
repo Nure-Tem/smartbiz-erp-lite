@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
 import { PageHeader } from "@/components/common/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,8 +12,12 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";
+import { requireAuth } from "@/lib/route-guards";
+import { listProfiles, profileDisplayName, profileInitials } from "@/lib/api/profiles";
+import { LoadingSpinner } from "@/components/common/loading-spinner";
 
 export const Route = createFileRoute("/settings")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "Settings — SmartBiz ERP Lite" },
@@ -24,14 +29,13 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-const USERS = [
-  { name: "Nure Tem", email: "owner@smartbiz.app", role: "Admin" },
-  { name: "Sara Ahmed", email: "sara@smartbiz.app", role: "Cashier" },
-  { name: "Liam Novak", email: "liam@smartbiz.app", role: "Cashier" },
-];
-
 function SettingsPage() {
   const { theme, toggle } = useTheme();
+
+  const profilesQuery = useQuery({
+    queryKey: ["profiles"],
+    queryFn: listProfiles,
+  });
 
   return (
     <AppLayout>
@@ -85,33 +89,48 @@ function SettingsPage() {
           <Card className="rounded-xl">
             <CardHeader>
               <CardTitle>Team members</CardTitle>
-              <CardDescription>Roles are enforced once authentication is connected.</CardDescription>
+              <CardDescription>All registered users in this workspace.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {USERS.map((u) => (
-                <div
-                  key={u.email}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="size-9">
-                      <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
-                        {u.name.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{u.name}</p>
-                      <p className="text-xs text-muted-foreground">{u.email}</p>
+              {profilesQuery.isLoading && <LoadingSpinner label="Loading team members..." />}
+
+              {profilesQuery.isError && (
+                <p className="text-sm text-destructive">
+                  Failed to load team members. Please try refreshing.
+                </p>
+              )}
+
+              {!profilesQuery.isLoading && !profilesQuery.isError && (profilesQuery.data ?? []).map((profile) => {
+                const displayName = profileDisplayName(profile);
+                const initials = profileInitials(profile);
+                const role = profile.role ?? "—";
+                const isAdmin = role.toLowerCase() === "admin";
+
+                return (
+                  <div
+                    key={profile.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="size-9">
+                        <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{displayName}</p>
+                        <p className="text-xs text-muted-foreground">{profile.email}</p>
+                      </div>
                     </div>
+                    <Badge
+                      variant="secondary"
+                      className={isAdmin ? "bg-primary/15 text-primary" : ""}
+                    >
+                      {role}
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className={u.role === "Admin" ? "bg-primary/15 text-primary" : ""}>
-                    {u.role}
-                  </Badge>
-                </div>
-              ))}
-              <Button variant="outline" onClick={() => toast.info("Invites are available after auth is connected.")}>
-                Invite user
-              </Button>
+                );
+              })}
             </CardContent>
           </Card>
         </TabsContent>

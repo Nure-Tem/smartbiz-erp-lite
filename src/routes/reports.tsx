@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bar,
@@ -18,10 +18,12 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { PageHeader } from "@/components/common/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { revenueTrend, salesByCategory, weeklyOrders } from "@/lib/mock/db";
-import { productsQuery, salesQuery } from "@/lib/mock/queries";
+import { productsQuery, salesQuery } from "@/lib/queries";
 import { currency } from "@/lib/format";
+import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/reports")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "Reports — SmartBiz ERP Lite" },

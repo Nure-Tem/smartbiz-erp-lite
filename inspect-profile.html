@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inspect Profiles Table</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Profiles Table Inspector</h1>
+    <button onclick="inspectTable()">Inspect Profiles Table</button>
+    <pre id="result"></pre>
+
+    <script>
+        const supabase = window.supabase.createClient(
+            'https://atbuzzupqxtleaorgfpu.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YnV6enVwcXh0bGVhb3JnZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NTUzMjQsImV4cCI6MjEwMTUzMTMyNH0.rrEycRcmNHxPVKUp6EUGEmjGuEkJCHPkaoeUI2Ivbq8'
+        );
+
+        async function inspectTable() {
+            const result = document.getElementById('result');
+            result.textContent = 'Loading...';
+
+            try {
+                // Get current user
+                const { data: { user } } = await supabase.auth.getUser();
+                
+                result.textContent = 'Current User:\n' + JSON.stringify(user, null, 2);
+                
+                if (user) {
+                    // Try to get profile
+                    const { data: profile, error } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
+                    
+                    result.textContent += '\n\n=== PROFILE DATA ===\n';
+                    
+                    if (error) {
+                        result.textContent += 'Error: ' + JSON.stringify(error, null, 2);
+                    } else {
+                        result.textContent += JSON.stringify(profile, null, 2);
+                        
+                        result.textContent += '\n\n=== COLUMN NAMES ===\n';
+                        result.textContent += Object.keys(profile || {}).join('\n');
+                    }
+                }
+            } catch (err) {
+                result.textContent = 'Error: ' + err.toString();
+            }
+        }
+    </script>
+</body>
+</html>

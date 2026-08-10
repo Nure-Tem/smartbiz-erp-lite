@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -27,9 +27,11 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/common/loading-spinner";
 import { currency } from "@/lib/format";
 import { revenueTrend, weeklyOrders } from "@/lib/mock/db";
-import { customersQuery, productsQuery, salesQuery } from "@/lib/mock/queries";
+import { customersQuery, productsQuery, salesQuery } from "@/lib/queries";
+import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "Dashboard — SmartBiz ERP Lite" },

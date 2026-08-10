@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, ShoppingCart, Trash2 } from "lucide-react";
@@ -30,10 +30,12 @@ import {
 } from "@/components/ui/dialog";
 import { currency } from "@/lib/format";
 import { db } from "@/lib/mock/db";
-import { customersQuery, productsQuery, salesQuery } from "@/lib/mock/queries";
+import { customersQuery, productsQuery, salesQuery } from "@/lib/queries";
 import type { PaymentStatus, Sale } from "@/lib/mock/types";
+import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/sales")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "Sales — SmartBiz ERP Lite" },

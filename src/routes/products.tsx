@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -32,12 +32,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { db } from "@/lib/mock/db";
-import { categoriesQuery, productsQuery } from "@/lib/mock/queries";
+import { categoriesQuery, productsQuery } from "@/lib/queries";
+import { createProduct, updateProduct, deleteProduct } from "@/lib/api/products";
 import { currency } from "@/lib/format";
 import type { Product } from "@/lib/mock/types";
+import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/products")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "Products — SmartBiz ERP Lite" },
@@ -93,28 +95,37 @@ function ProductsPage() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["products"] });
 
   const saveMutation = useMutation({
-    mutationFn: (values: FormValues) => {
+    mutationFn: async (values: FormValues) => {
       const parsed = schema.parse(values);
       const payload = {
         ...parsed,
         imageUrl: parsed.imageUrl || "https://picsum.photos/seed/product/200/200",
       };
-      return editing ? db.products.update(editing.id, payload) : db.products.create(payload);
+      return editing ? updateProduct(editing.id, payload) : createProduct(payload);
     },
     onSuccess: () => {
       invalidate();
       toast.success(editing ? "Product updated" : "Product created");
       setDialogOpen(false);
     },
-    onError: () => toast.error("Could not save product"),
+    onError: (error: Error) => {
+      toast.error("Could not save product", {
+        description: error.message,
+      });
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => db.products.remove(id),
+    mutationFn: deleteProduct,
     onSuccess: () => {
       invalidate();
       toast.success("Product deleted");
       setDeleting(null);
+    },
+    onError: (error: Error) => {
+      toast.error("Could not delete product", {
+        description: error.message,
+      });
     },
   });
 

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Warehouse } from "lucide-react";
@@ -16,10 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { productsQuery } from "@/lib/mock/queries";
+import { productsQuery } from "@/lib/queries";
 import type { Product } from "@/lib/mock/types";
+import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/inventory")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "Inventory — SmartBiz ERP Lite" },

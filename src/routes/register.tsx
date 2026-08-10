@@ -1,15 +1,18 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/layout/auth-layout";
-import { mockSignIn } from "@/lib/mock/auth";
+import { signUp } from "@/lib/auth";
+import { redirectIfAuthenticated } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/register")({
+  beforeLoad: redirectIfAuthenticated,
   head: () => ({
     meta: [
       { title: "Create account — SmartBiz ERP Lite" },
@@ -36,21 +39,50 @@ const schema = z
 
 function RegisterPage() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: { name: "", company: "", email: "", password: "", confirm: "" },
   });
 
-  const onSubmit = form.handleSubmit((values) => {
-    mockSignIn(values.email);
-    toast.success("Account created", { description: "This is a demo account only." });
-    navigate({ to: "/" });
+  const onSubmit = form.handleSubmit(async (values) => {
+    setIsLoading(true);
+    try {
+      const { user, error } = await signUp(values.email, values.password, {
+        name: values.name,
+        company: values.company,
+      });
+      
+      if (error) {
+        toast.error("Registration failed", { 
+          description: error.message || "Please try again with different credentials." 
+        });
+        return;
+      }
+
+      // Registration successful (user may be null if email confirmation is disabled)
+      toast.success("Account created successfully", { 
+        description: "Your account is ready to use. Redirecting to login..." 
+      });
+      
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        navigate({ to: "/login" });
+      }, 1500);
+      
+    } catch (error) {
+      toast.error("Registration failed", { 
+        description: "An unexpected error occurred. Please try again." 
+      });
+    } finally {
+      setIsLoading(false);
+    }
   });
 
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Mock registration — no data leaves your browser."
+      subtitle="Start managing inventory, sales and customers today."
       footer={
         <>
           Already registered?{" "}
@@ -76,8 +108,8 @@ function RegisterPage() {
             <p className="text-xs text-destructive">{form.formState.errors[field]?.message}</p>
           </div>
         ))}
-        <Button type="submit" className="w-full">
-          Create account
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Creating account..." : "Create account"}
         </Button>
       </form>
     </AuthLayout>

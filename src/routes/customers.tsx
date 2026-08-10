@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -26,11 +26,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { db } from "@/lib/mock/db";
-import { customersQuery } from "@/lib/mock/queries";
+import { customersQuery } from "@/lib/queries";
 import { currency } from "@/lib/format";
 import type { Customer } from "@/lib/mock/types";
+import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/customers")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "Customers — SmartBiz ERP Lite" },
