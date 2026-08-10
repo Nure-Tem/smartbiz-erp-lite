@@ -60,6 +60,13 @@ const tone: Record<string, string> = {
 
 const PAGE_SIZE = 8;
 
+const PAYMENT_METHODS = [
+  { value: "cash", label: "Cash" },
+  { value: "bank", label: "Bank" },
+  { value: "credit", label: "Credit" },
+  { value: "telebirr", label: "Telebirr" },
+] as const;
+
 interface LineItem {
   key: string;
   productId: string;
@@ -281,27 +288,18 @@ function SalesPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="payment-method">Payment method</Label>
-                {methodOptions.length > 0 ? (
-                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                    <SelectTrigger id="payment-method" aria-label="Select payment method">
-                      <SelectValue placeholder="Select payment method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {methodOptions.map((m) => (
-                        <SelectItem key={m} value={m}>
-                          {m}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    id="payment-method"
-                    value={paymentMethod}
-                    placeholder="e.g. the value used by your payment_method type"
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                  />
-                )}
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger id="payment-method" aria-label="Select payment method">
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_METHODS.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

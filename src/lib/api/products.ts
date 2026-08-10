@@ -13,8 +13,8 @@ interface ProductRow {
   category_id: string;
   buying_price: number;
   selling_price: number;
-  stock: number;
-  min_stock: number;
+  current_stock: number;
+  minimum_stock: number;
   created_at: string;
 }
 
@@ -30,8 +30,8 @@ function mapToProduct(row: ProductRow): Product {
     categoryId: row.category_id,
     buyingPrice: row.buying_price,
     sellingPrice: row.selling_price,
-    stock: row.stock,
-    minStock: row.min_stock,
+    stock: row.current_stock,
+    minStock: row.minimum_stock,
     createdAt: row.created_at,
   };
 }
@@ -47,8 +47,8 @@ function mapFromProduct(product: Omit<Product, 'id' | 'createdAt'>): Omit<Produc
     category_id: product.categoryId,
     buying_price: product.buyingPrice,
     selling_price: product.sellingPrice,
-    stock: product.stock,
-    min_stock: product.minStock,
+    current_stock: product.stock,
+    minimum_stock: product.minStock,
   };
 }
 
@@ -104,8 +104,8 @@ export async function updateProduct(
   if (input.categoryId !== undefined) updateData.category_id = input.categoryId;
   if (input.buyingPrice !== undefined) updateData.buying_price = input.buyingPrice;
   if (input.sellingPrice !== undefined) updateData.selling_price = input.sellingPrice;
-  if (input.stock !== undefined) updateData.stock = input.stock;
-  if (input.minStock !== undefined) updateData.min_stock = input.minStock;
+  if (input.stock !== undefined) updateData.current_stock = input.stock;
+  if (input.minStock !== undefined) updateData.minimum_stock = input.minStock;
 
   const { data, error } = await supabase
     .from('products')
