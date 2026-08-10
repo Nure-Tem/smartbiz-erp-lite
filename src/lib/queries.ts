@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { listProducts } from "./api/products";
 import { listCategories } from "./api/categories";
 import { listCustomers } from "./api/customers";
-import { db } from "./mock/db";
+import { listPaymentMethods, listSales } from "./api/sales";
 
 /**
  * Query options for products
@@ -32,10 +32,18 @@ export const customersQuery = queryOptions({
 });
 
 /**
- * Query options for sales
- * Still using mock data until sales are connected
+ * Query options for sales (sales + sale_items)
+ * Uses Supabase API instead of mock data
  */
 export const salesQuery = queryOptions({
   queryKey: ["sales"],
-  queryFn: () => db.sales.list(),
+  queryFn: listSales,
+});
+
+/**
+ * Distinct payment_method values found in the existing sales table.
+ */
+export const paymentMethodsQuery = queryOptions({
+  queryKey: ["sales", "payment-methods"],
+  queryFn: listPaymentMethods,
 });

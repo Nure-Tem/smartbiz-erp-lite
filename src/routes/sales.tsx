@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, ShoppingCart, Trash2 } from "lucide-react";
@@ -29,9 +29,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { currency } from "@/lib/format";
-import { db } from "@/lib/mock/db";
-import { customersQuery, productsQuery, salesQuery } from "@/lib/queries";
-import type { PaymentStatus, Sale } from "@/lib/mock/types";
+import { createSale, type Sale } from "@/lib/api/sales";
+import {
+  customersQuery,
+  paymentMethodsQuery,
+  productsQuery,
+  salesQuery,
+} from "@/lib/queries";
 import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/sales")({
@@ -48,6 +52,7 @@ export const Route = createFileRoute("/sales")({
 });
 
 const tone: Record<string, string> = {
+  cash: "bg-success/15 text-success",
   paid: "bg-success/15 text-success",
   pending: "bg-warning/20 text-warning-foreground",
   partial: "bg-primary/15 text-primary",
@@ -72,6 +77,7 @@ function SalesPage() {
   const sales = useQuery(salesQuery);
   const customers = useQuery(customersQuery);
   const products = useQuery(productsQuery);
+  const paymentMethods = useQuery(paymentMethodsQuery);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -79,11 +85,12 @@ function SalesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const [customerId, setCustomerId] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("paid");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [paymentMethod, setPaymentMethod] = useState("");
   const [lines, setLines] = useState<LineItem[]>([newLine()]);
 
-  const customerName = (id: string) =>
+  const methodOptions = paymentMethods.data ?? [];
+
+  const customerName = (id: string | null) =>
     (customers.data ?? []).find((c) => c.id === id)?.name ?? "Walk-in customer";
 
   const filtered = useMemo(() => {
@@ -93,7 +100,7 @@ function SalesPage() {
         !term ||
         s.invoiceNumber.toLowerCase().includes(term) ||
         customerName(s.customerId).toLowerCase().includes(term);
-      const matchesStatus = statusFilter === "all" || s.paymentStatus === statusFilter;
+      const matchesStatus = statusFilter === "all" || s.paymentMethod === statusFilter;
       return matchesTerm && matchesStatus;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,8 +108,10 @@ function SalesPage() {
 
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const priceOf = (productId: string) =>
-    (products.data ?? []).find((p) => p.id === productId)?.sellingPrice ?? 0;
+  const productOf = (productId: string) =>
+    (products.data ?? []).find((p) => p.id === productId);
+
+  const priceOf = (productId: string) => productOf(productId)?.sellingPrice ?? 0;
 
   const total = lines.reduce(
     (sum, l) => sum + priceOf(l.productId) * (Number.isFinite(l.quantity) ? l.quantity : 0),
@@ -111,24 +120,38 @@ function SalesPage() {
 
   const resetForm = () => {
     setCustomerId("");
-    setPaymentStatus("paid");
-    setDate(new Date().toISOString().slice(0, 10));
+    setPaymentMethod("");
     setLines([newLine()]);
   };
 
-  const createSale = useMutation({
-    mutationFn: () => db.sales.create({ customerId, total, paymentStatus, date }),
+  const saveSale = useMutation({
+    mutationFn: () =>
+      createSale({
+        customerId: customerId || null,
+        paymentMethod,
+        lines: lines
+          .filter((l) => l.productId && l.quantity > 0)
+          .map((l) => {
+            const product = productOf(l.productId);
+            return {
+              productId: l.productId,
+              quantity: l.quantity,
+              sellingPrice: product?.sellingPrice ?? 0,
+              buyingPrice: product?.buyingPrice ?? 0,
+            };
+          }),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sales"] });
       toast.success("Sale recorded");
       setDialogOpen(false);
       resetForm();
     },
-    onError: () => toast.error("Could not record the sale"),
+    onError: (error: Error) => toast.error(error.message || "Could not record the sale"),
   });
 
   const canSubmit =
-    Boolean(customerId) && total > 0 && lines.some((l) => l.productId && l.quantity > 0);
+    Boolean(paymentMethod) && total > 0 && lines.some((l) => l.productId && l.quantity > 0);
 
   const columns: Column<Sale>[] = [
     {
@@ -144,10 +167,10 @@ function SalesPage() {
     },
     {
       key: "status",
-      header: "Payment status",
+      header: "Payment method",
       cell: (row) => (
-        <Badge variant="secondary" className={tone[row.paymentStatus]}>
-          {row.paymentStatus}
+        <Badge variant="secondary" className={tone[row.paymentMethod]}>
+          {row.paymentMethod}
         </Badge>
       ),
     },
@@ -158,7 +181,7 @@ function SalesPage() {
     <AppLayout>
       <PageHeader
         title="Sales"
-        description="Invoice history. Recording a sale updates the list only — stock deduction comes later."
+        description="Invoice history. Recording a sale saves the invoice and its line items — stock deduction comes later."
         actions={
           <Button
             onClick={() => {
@@ -188,14 +211,16 @@ function SalesPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-full sm:w-48" aria-label="Filter by payment status">
-            <SelectValue placeholder="Payment status" />
+          <SelectTrigger className="w-full sm:w-48" aria-label="Filter by payment method">
+            <SelectValue placeholder="Payment method" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="partial">Partial</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="all">All methods</SelectItem>
+            {methodOptions.map((m) => (
+              <SelectItem key={m} value={m}>
+                {m}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -238,7 +263,7 @@ function SalesPage() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Customer</Label>
                 <Select value={customerId} onValueChange={setCustomerId}>
@@ -255,29 +280,28 @@ function SalesPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Payment status</Label>
-                <Select
-                  value={paymentStatus}
-                  onValueChange={(v) => setPaymentStatus(v as PaymentStatus)}
-                >
-                  <SelectTrigger aria-label="Select payment status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="partial">Partial</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sale-date">Date</Label>
-                <Input
-                  id="sale-date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
+                <Label htmlFor="payment-method">Payment method</Label>
+                {methodOptions.length > 0 ? (
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger id="payment-method" aria-label="Select payment method">
+                      <SelectValue placeholder="Select payment method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {methodOptions.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {m}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="payment-method"
+                    value={paymentMethod}
+                    placeholder="e.g. the value used by your payment_method type"
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                )}
               </div>
             </div>
 
@@ -359,11 +383,8 @@ function SalesPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
-              disabled={!canSubmit || createSale.isPending}
-              onClick={() => createSale.mutate()}
-            >
-              {createSale.isPending ? "Saving..." : "Save sale"}
+            <Button disabled={!canSubmit || saveSale.isPending} onClick={() => saveSale.mutate()}>
+              {saveSale.isPending ? "Saving..." : "Save sale"}
             </Button>
           </DialogFooter>
         </DialogContent>

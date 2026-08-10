@@ -67,7 +67,7 @@ export function profileDisplayName(profile: Profile): string {
   return (
     profile.full_name?.trim() ||
     profile.name?.trim() ||
-    profile.email.split('@')[0].replace(/[._-]/g, ' ')
+    (profile.email.split('@')[0] ?? '').replace(/[._-]/g, ' ')
   );
 }
 
