@@ -75,7 +75,7 @@ function DashboardPage() {
     };
   }, [products.data, customers.data, sales.data]);
 
-  const customerName = (id: string) =>
+  const customerName = (id: string | null) =>
     (customers.data ?? []).find((c) => c.id === id)?.name ?? "Walk-in customer";
 
   const cards = [
