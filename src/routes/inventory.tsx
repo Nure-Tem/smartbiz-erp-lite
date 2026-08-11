@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Warehouse } from "lucide-react";
+import { History, Warehouse } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { PageHeader } from "@/components/common/page-header";
 import { SearchBar } from "@/components/common/search-bar";
@@ -9,6 +9,7 @@ import { DataTable, type Column } from "@/components/common/data-table";
 import { EmptyState } from "@/components/common/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -16,9 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { productsQuery } from "@/lib/queries";
+import { inventoryLogsQuery, productsQuery } from "@/lib/queries";
+import type { InventoryLog } from "@/lib/api/inventory";
 import type { Product } from "@/lib/mock/types";
 import { requireAuth } from "@/lib/route-guards";
+
 
 export const Route = createFileRoute("/inventory")({
   beforeLoad: requireAuth,
