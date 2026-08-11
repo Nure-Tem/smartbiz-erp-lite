@@ -76,15 +76,24 @@ function DashboardPage() {
     };
   }, [products.data, customers.data, sales.data]);
 
+  const revenueTrend = useMemo(() => revenueByMonth(sales.data ?? []), [sales.data]);
+  const weeklyOrders = useMemo(() => ordersByDay(sales.data ?? []), [sales.data]);
+
   const customerName = (id: string | null) =>
     (customers.data ?? []).find((c) => c.id === id)?.name ?? "Walk-in customer";
 
   const cards = [
-    { label: "Total Products", value: String(stats.products), icon: Package, hint: "+4 this month" },
-    { label: "Total Customers", value: String(stats.customers), icon: Users, hint: "+2 this month" },
-    { label: "Total Sales", value: String(stats.sales), icon: ShoppingCart, hint: "+18% vs July" },
-    { label: "Revenue", value: currency(stats.revenue), icon: DollarSign, hint: "+11% vs July" },
+    { label: "Total Products", value: String(stats.products), icon: Package, hint: `${stats.lowStock.length} low on stock` },
+    { label: "Total Customers", value: String(stats.customers), icon: Users, hint: "Registered customers" },
+    { label: "Total Sales", value: String(stats.sales), icon: ShoppingCart, hint: "Invoices recorded" },
+    {
+      label: "Revenue",
+      value: currency(stats.revenue),
+      icon: DollarSign,
+      hint: `Profit ${currency((sales.data ?? []).reduce((s, r) => s + r.profit, 0))}`,
+    },
   ];
+
 
   return (
     <AppLayout>
