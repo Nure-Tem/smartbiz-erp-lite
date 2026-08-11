@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Warehouse } from "lucide-react";
+import { History, Warehouse } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { PageHeader } from "@/components/common/page-header";
 import { SearchBar } from "@/components/common/search-bar";
@@ -9,6 +9,7 @@ import { DataTable, type Column } from "@/components/common/data-table";
 import { EmptyState } from "@/components/common/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -16,9 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { productsQuery } from "@/lib/queries";
+import { inventoryLogsQuery, productsQuery } from "@/lib/queries";
+import type { InventoryLog } from "@/lib/api/inventory";
 import type { Product } from "@/lib/mock/types";
 import { requireAuth } from "@/lib/route-guards";
+
 
 export const Route = createFileRoute("/inventory")({
   beforeLoad: requireAuth,
@@ -41,6 +44,8 @@ function statusOf(p: Product) {
 
 function InventoryPage() {
   const products = useQuery(productsQuery);
+  const logs = useQuery(inventoryLogsQuery);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -93,6 +98,46 @@ function InventoryPage() {
     },
   ];
 
+  const logColumns: Column<InventoryLog>[] = [
+    {
+      key: "product",
+      header: "Product",
+      cell: (row) => (
+        <div>
+          <p className="font-medium text-foreground">{row.productName}</p>
+          <p className="text-xs text-muted-foreground">{row.productSku}</p>
+        </div>
+      ),
+    },
+    {
+      key: "movement",
+      header: "Movement",
+      cell: (row) => (
+        <Badge variant="secondary" className="capitalize">
+          {row.movementType.replace(/_/g, " ")}
+        </Badge>
+      ),
+    },
+    { key: "quantity", header: "Quantity", cell: (row) => row.quantity },
+    {
+      key: "change",
+      header: "Stock change",
+      cell: (row) => (
+        <span className="text-sm">
+          {row.previousStock} → <span className="font-medium">{row.newStock}</span>
+        </span>
+      ),
+    },
+    { key: "reason", header: "Reason", cell: (row) => row.reason ?? "—" },
+    {
+      key: "date",
+      header: "Date",
+      cell: (row) => new Date(row.createdAt).toLocaleString(),
+    },
+  ];
+
+
+
   return (
     <AppLayout>
       <PageHeader
@@ -127,6 +172,32 @@ function InventoryPage() {
           />
         }
       />
+
+      <Card className="rounded-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="size-4 text-primary" />
+            Stock movements
+          </CardTitle>
+          <CardDescription>Latest inventory changes recorded in the system.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            columns={logColumns}
+            rows={logs.data ?? []}
+            isLoading={logs.isLoading}
+            isError={logs.isError}
+            onRetry={() => logs.refetch()}
+            emptyState={
+              <EmptyState
+                icon={History}
+                title="No stock movements yet"
+                description="Movements appear here whenever stock changes, for example after a sale."
+              />
+            }
+          />
+        </CardContent>
+      </Card>
 
     </AppLayout>
   );

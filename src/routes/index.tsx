@@ -2,7 +2,6 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowUpRight,
   DollarSign,
   Package,
   ShoppingCart,
@@ -26,8 +25,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/common/loading-spinner";
 import { currency } from "@/lib/format";
-import { revenueTrend, weeklyOrders } from "@/lib/mock/db";
+import { ordersByDay, revenueByMonth } from "@/lib/analytics";
 import { customersQuery, productsQuery, salesQuery } from "@/lib/queries";
+
 import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/")({
@@ -75,15 +75,24 @@ function DashboardPage() {
     };
   }, [products.data, customers.data, sales.data]);
 
+  const revenueTrend = useMemo(() => revenueByMonth(sales.data ?? []), [sales.data]);
+  const weeklyOrders = useMemo(() => ordersByDay(sales.data ?? []), [sales.data]);
+
   const customerName = (id: string | null) =>
     (customers.data ?? []).find((c) => c.id === id)?.name ?? "Walk-in customer";
 
   const cards = [
-    { label: "Total Products", value: String(stats.products), icon: Package, hint: "+4 this month" },
-    { label: "Total Customers", value: String(stats.customers), icon: Users, hint: "+2 this month" },
-    { label: "Total Sales", value: String(stats.sales), icon: ShoppingCart, hint: "+18% vs July" },
-    { label: "Revenue", value: currency(stats.revenue), icon: DollarSign, hint: "+11% vs July" },
+    { label: "Total Products", value: String(stats.products), icon: Package, hint: `${stats.lowStock.length} low on stock` },
+    { label: "Total Customers", value: String(stats.customers), icon: Users, hint: "Registered customers" },
+    { label: "Total Sales", value: String(stats.sales), icon: ShoppingCart, hint: "Invoices recorded" },
+    {
+      label: "Revenue",
+      value: currency(stats.revenue),
+      icon: DollarSign,
+      hint: `Profit ${currency((sales.data ?? []).reduce((s, r) => s + r.profit, 0))}`,
+    },
   ];
+
 
   return (
     <AppLayout>
@@ -109,10 +118,10 @@ function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-semibold text-foreground">{value}</p>
-                  <p className="mt-1 flex items-center gap-1 text-xs text-success">
-                    <ArrowUpRight className="size-3" />
+                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                     {hint}
                   </p>
+
                 </CardContent>
               </Card>
             ))}

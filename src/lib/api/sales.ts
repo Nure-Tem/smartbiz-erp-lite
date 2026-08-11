@@ -1,4 +1,6 @@
 import { supabase } from '../supabase';
+import { createSaleInventoryLog } from './inventory';
+
 
 /**
  * Sales API — reads/writes the existing Supabase `sales` and `sale_items` tables.
@@ -176,6 +178,43 @@ export async function createSale(input: CreateSaleInput): Promise<Sale> {
   const totalAmount = subtotal - discount + tax;
   const profit = itemTotals.reduce((sum, l) => sum + l.profit, 0) - discount;
 
+  // ---- Stock validation (before anything is written) ----
+  // Aggregate quantities per product so the same product on multiple lines is
+  // validated against the total requested quantity.
+  const requestedByProduct = new Map<string, number>();
+  for (const l of lines) {
+    requestedByProduct.set(l.productId, (requestedByProduct.get(l.productId) ?? 0) + l.quantity);
+  }
+
+  const productIds = Array.from(requestedByProduct.keys());
+  const { data: stockRows, error: stockError } = await supabase
+    .from('products')
+    .select('id, name, current_stock')
+    .in('id', productIds);
+
+  if (stockError) {
+    throw new Error(`Failed to verify stock: ${stockError.message}`);
+  }
+
+  const stockById = new Map(
+    (stockRows ?? []).map((p) => [
+      p.id as string,
+      { name: p.name as string, stock: Number(p.current_stock) },
+    ]),
+  );
+
+  for (const [productId, requested] of requestedByProduct) {
+    const product = stockById.get(productId);
+    if (!product) {
+      throw new Error('One of the selected products no longer exists.');
+    }
+    if (requested > product.stock) {
+      throw new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}.`);
+    }
+  }
+
+
+
   const { data: sale, error: saleError } = await supabase
     .from('sales')
     .insert({
@@ -215,5 +254,51 @@ export async function createSale(input: CreateSaleInput): Promise<Sale> {
     throw new Error(`Failed to create sale items: ${itemsError.message}`);
   }
 
-  return mapToSale({ ...(sale as SaleRow), sale_items: (items || []) as SaleItemRow[] });
+  // ---- Stock deduction + inventory logs (after the sale is persisted) ----
+  const stockFailures: string[] = [];
+
+  for (const [productId, quantity] of requestedByProduct) {
+    const product = stockById.get(productId)!;
+    const previousStock = product.stock;
+    const newStock = previousStock - quantity;
+
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({ current_stock: newStock })
+      .eq('id', productId);
+
+    if (updateError) {
+      stockFailures.push(`${product.name}: ${updateError.message}`);
+      continue;
+    }
+
+    try {
+      await createSaleInventoryLog({
+        productId,
+        quantity,
+        previousStock,
+        newStock,
+        reason: 'Sale',
+        createdBy: authData.user.id,
+      });
+    } catch (logError) {
+      stockFailures.push(
+        `${product.name}: ${logError instanceof Error ? logError.message : 'inventory log failed'}`,
+      );
+    }
+  }
+
+  const result = mapToSale({ ...(sale as SaleRow), sale_items: (items || []) as SaleItemRow[] });
+
+  if (stockFailures.length > 0) {
+    // The sale and its items exist; deleting them here is unsafe (delete is
+    // admin-only under the existing RLS) and would lose the recorded revenue.
+    // Surface the partial failure instead of reporting full success.
+    throw new Error(
+      `Sale ${result.invoiceNumber} was saved, but inventory could not be fully updated: ${stockFailures.join('; ')}. Please review stock levels.`,
+    );
+  }
+
+  return result;
 }
+

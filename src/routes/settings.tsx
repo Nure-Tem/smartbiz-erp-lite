@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
 import { PageHeader } from "@/components/common/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +16,8 @@ import { useTheme } from "@/hooks/use-theme";
 import { requireAuth } from "@/lib/route-guards";
 import { listProfiles, profileDisplayName, profileInitials } from "@/lib/api/profiles";
 import { LoadingSpinner } from "@/components/common/loading-spinner";
+import { settingsQuery } from "@/lib/queries";
+import { saveSettings, type SaveSettingsInput } from "@/lib/api/settings";
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: requireAuth,
@@ -31,11 +34,39 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const { theme, toggle } = useTheme();
+  const qc = useQueryClient();
 
   const profilesQuery = useQuery({
     queryKey: ["profiles"],
     queryFn: listProfiles,
   });
+
+  const business = useQuery(settingsQuery);
+
+  const [form, setForm] = useState<SaveSettingsInput>({
+    businessName: "",
+    businessLogoUrl: "",
+    currency: "ETB",
+    taxPercentage: 0,
+    receiptFooter: "",
+  });
+
+  useEffect(() => {
+    if (business.data) {
+      const { id: _id, ...rest } = business.data;
+      setForm(rest);
+    }
+  }, [business.data]);
+
+  const save = useMutation({
+    mutationFn: () => saveSettings(form),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      toast.success("Company details saved");
+    },
+    onError: (error: Error) => toast.error(error.message || "Could not save settings"),
+  });
+
 
   return (
     <AppLayout>
@@ -55,33 +86,74 @@ function SettingsPage() {
               <CardDescription>Shown on invoices and receipts.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form
-                className="grid gap-4 sm:grid-cols-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  toast.success("Company details saved");
-                }}
-              >
-                {[
-                  ["company", "Business name", "SmartBiz Trading Ltd"],
-                  ["email", "Contact email", "hello@smartbiz.app"],
-                  ["phone", "Phone", "+1 202 555 0100"],
-                  ["tax", "Tax / VAT number", "US-4429183"],
-                ].map(([id, label, value]) => (
-                  <div key={id} className="space-y-2">
-                    <Label htmlFor={id}>{label}</Label>
-                    <Input id={id} defaultValue={value} />
+              {business.isLoading ? (
+                <LoadingSpinner label="Loading company settings..." />
+              ) : business.isError ? (
+                <p className="text-sm text-destructive">
+                  Failed to load company settings. Please try refreshing.
+                </p>
+              ) : (
+                <form
+                  className="grid gap-4 sm:grid-cols-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    save.mutate();
+                  }}
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="business-name">Business name</Label>
+                    <Input
+                      id="business-name"
+                      value={form.businessName}
+                      onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))}
+                    />
                   </div>
-                ))}
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input id="address" defaultValue="18 Market Street, Boston, MA" />
-                </div>
-                <div className="sm:col-span-2">
-                  <Button type="submit">Save changes</Button>
-                </div>
-              </form>
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Currency</Label>
+                    <Input
+                      id="currency"
+                      value={form.currency}
+                      onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tax-percentage">Tax percentage</Label>
+                    <Input
+                      id="tax-percentage"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={form.taxPercentage}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, taxPercentage: Number(e.target.value) || 0 }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="logo-url">Business logo URL</Label>
+                    <Input
+                      id="logo-url"
+                      value={form.businessLogoUrl}
+                      onChange={(e) => setForm((f) => ({ ...f, businessLogoUrl: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="receipt-footer">Receipt footer</Label>
+                    <Input
+                      id="receipt-footer"
+                      value={form.receiptFooter}
+                      onChange={(e) => setForm((f) => ({ ...f, receiptFooter: e.target.value }))}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Button type="submit" disabled={save.isPending}>
+                      {save.isPending ? "Saving..." : "Save changes"}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </CardContent>
+
           </Card>
         </TabsContent>
 
