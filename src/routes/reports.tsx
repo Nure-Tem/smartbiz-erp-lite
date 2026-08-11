@@ -59,20 +59,31 @@ const PIE_COLORS = [
 function ReportsPage() {
   const sales = useQuery(salesQuery);
   const products = useQuery(productsQuery);
+  const categories = useQuery(categoriesQuery);
 
   const salesRows = sales.data ?? [];
   const productRows = products.data ?? [];
+  const categoryRows = categories.data ?? [];
+
+  const revenueTrend = revenueByMonth(salesRows);
+  const weeklyOrders = ordersByDay(salesRows);
+  const salesByCategory = revenueByCategory(salesRows, productRows, categoryRows);
 
   const revenue = revenueTrend.reduce((s, r) => s + r.revenue, 0);
-  const cost = revenueTrend.reduce((s, r) => s + r.cost, 0);
+  const cost = costOfGoodsSold(salesRows);
   const invoiceTotal = salesRows.reduce((s, r) => s + r.total, 0);
   const avgOrder = salesRows.length ? invoiceTotal / salesRows.length : 0;
   const lowStock = productRows.filter((p) => p.stock <= p.minStock).length;
   const stockValue = productRows.reduce((s, p) => s + p.buyingPrice * p.stock, 0);
+  const grossProfit = salesRows.reduce((s, r) => s + r.profit, 0);
 
   const summary = [
-    { label: "Revenue (7 months)", value: currency(revenue), hint: "Mock trend data" },
-    { label: "Gross margin", value: currency(revenue - cost), hint: "Revenue minus cost" },
+    { label: "Revenue (7 months)", value: currency(revenue), hint: "From recorded sales" },
+    {
+      label: "Gross margin",
+      value: currency(grossProfit),
+      hint: `Cost of goods ${currency(cost)}`,
+    },
     {
       label: "Invoices",
       value: String(salesRows.length),
@@ -89,8 +100,9 @@ function ReportsPage() {
     <AppLayout>
       <PageHeader
         title="Reports"
-        description="Placeholder analytics — wired to live data once the backend is connected."
+        description="Revenue, orders and category performance derived from your recorded sales."
       />
+
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {summary.map((s) => (
