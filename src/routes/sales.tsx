@@ -150,11 +150,20 @@ function SalesPage() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sales"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["inventory-logs"] });
       toast.success("Sale recorded");
       setDialogOpen(false);
       resetForm();
     },
-    onError: (error: Error) => toast.error(error.message || "Could not record the sale"),
+    onError: (error: Error) => {
+      // Stock could still have changed on a partial failure, so refresh reads.
+      qc.invalidateQueries({ queryKey: ["sales"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["inventory-logs"] });
+      toast.error(error.message || "Could not record the sale");
+    },
+
   });
 
   const canSubmit =
