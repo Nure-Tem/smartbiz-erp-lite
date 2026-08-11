@@ -133,6 +133,32 @@ function InventoryPage() {
         }
       />
 
+      <Card className="rounded-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="size-4 text-primary" />
+            Stock movements
+          </CardTitle>
+          <CardDescription>Latest inventory changes recorded in the system.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            columns={logColumns}
+            rows={logs.data ?? []}
+            isLoading={logs.isLoading}
+            isError={logs.isError}
+            onRetry={() => logs.refetch()}
+            emptyState={
+              <EmptyState
+                icon={History}
+                title="No stock movements yet"
+                description="Movements appear here whenever stock changes, for example after a sale."
+              />
+            }
+          />
+        </CardContent>
+      </Card>
+
     </AppLayout>
   );
 }
