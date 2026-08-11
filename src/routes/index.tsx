@@ -119,10 +119,10 @@ function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-semibold text-foreground">{value}</p>
-                  <p className="mt-1 flex items-center gap-1 text-xs text-success">
-                    <ArrowUpRight className="size-3" />
+                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                     {hint}
                   </p>
+
                 </CardContent>
               </Card>
             ))}
