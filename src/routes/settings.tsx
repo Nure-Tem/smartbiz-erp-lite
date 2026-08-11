@@ -86,33 +86,74 @@ function SettingsPage() {
               <CardDescription>Shown on invoices and receipts.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form
-                className="grid gap-4 sm:grid-cols-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  toast.success("Company details saved");
-                }}
-              >
-                {[
-                  ["company", "Business name", "SmartBiz Trading Ltd"],
-                  ["email", "Contact email", "hello@smartbiz.app"],
-                  ["phone", "Phone", "+1 202 555 0100"],
-                  ["tax", "Tax / VAT number", "US-4429183"],
-                ].map(([id, label, value]) => (
-                  <div key={id} className="space-y-2">
-                    <Label htmlFor={id}>{label}</Label>
-                    <Input id={id} defaultValue={value} />
+              {business.isLoading ? (
+                <LoadingSpinner label="Loading company settings..." />
+              ) : business.isError ? (
+                <p className="text-sm text-destructive">
+                  Failed to load company settings. Please try refreshing.
+                </p>
+              ) : (
+                <form
+                  className="grid gap-4 sm:grid-cols-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    save.mutate();
+                  }}
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="business-name">Business name</Label>
+                    <Input
+                      id="business-name"
+                      value={form.businessName}
+                      onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))}
+                    />
                   </div>
-                ))}
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input id="address" defaultValue="18 Market Street, Boston, MA" />
-                </div>
-                <div className="sm:col-span-2">
-                  <Button type="submit">Save changes</Button>
-                </div>
-              </form>
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Currency</Label>
+                    <Input
+                      id="currency"
+                      value={form.currency}
+                      onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tax-percentage">Tax percentage</Label>
+                    <Input
+                      id="tax-percentage"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={form.taxPercentage}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, taxPercentage: Number(e.target.value) || 0 }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="logo-url">Business logo URL</Label>
+                    <Input
+                      id="logo-url"
+                      value={form.businessLogoUrl}
+                      onChange={(e) => setForm((f) => ({ ...f, businessLogoUrl: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="receipt-footer">Receipt footer</Label>
+                    <Input
+                      id="receipt-footer"
+                      value={form.receiptFooter}
+                      onChange={(e) => setForm((f) => ({ ...f, receiptFooter: e.target.value }))}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Button type="submit" disabled={save.isPending}>
+                      {save.isPending ? "Saving..." : "Save changes"}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </CardContent>
+
           </Card>
         </TabsContent>
 
