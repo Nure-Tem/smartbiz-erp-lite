@@ -3,6 +3,25 @@ import { listProducts } from "./api/products";
 import { listCategories } from "./api/categories";
 import { listCustomers } from "./api/customers";
 import { listPaymentMethods, listSales } from "./api/sales";
+import { listInventoryLogs } from "./api/inventory";
+import { getSettings } from "./api/settings";
+
+/**
+ * Query options for inventory movement logs (public.inventory_logs)
+ */
+export const inventoryLogsQuery = queryOptions({
+  queryKey: ["inventory-logs"],
+  queryFn: () => listInventoryLogs(50),
+});
+
+/**
+ * Query options for business settings (public.settings)
+ */
+export const settingsQuery = queryOptions({
+  queryKey: ["settings"],
+  queryFn: getSettings,
+});
+
 
 /**
  * Query options for products
