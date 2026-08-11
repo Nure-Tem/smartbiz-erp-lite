@@ -254,5 +254,51 @@ export async function createSale(input: CreateSaleInput): Promise<Sale> {
     throw new Error(`Failed to create sale items: ${itemsError.message}`);
   }
 
-  return mapToSale({ ...(sale as SaleRow), sale_items: (items || []) as SaleItemRow[] });
+  // ---- Stock deduction + inventory logs (after the sale is persisted) ----
+  const stockFailures: string[] = [];
+
+  for (const [productId, quantity] of requestedByProduct) {
+    const product = stockById.get(productId)!;
+    const previousStock = product.stock;
+    const newStock = previousStock - quantity;
+
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({ current_stock: newStock })
+      .eq('id', productId);
+
+    if (updateError) {
+      stockFailures.push(`${product.name}: ${updateError.message}`);
+      continue;
+    }
+
+    try {
+      await createSaleInventoryLog({
+        productId,
+        quantity,
+        previousStock,
+        newStock,
+        reason: 'Sale',
+        createdBy: authData.user.id,
+      });
+    } catch (logError) {
+      stockFailures.push(
+        `${product.name}: ${logError instanceof Error ? logError.message : 'inventory log failed'}`,
+      );
+    }
+  }
+
+  const result = mapToSale({ ...(sale as SaleRow), sale_items: (items || []) as SaleItemRow[] });
+
+  if (stockFailures.length > 0) {
+    // The sale and its items exist; deleting them here is unsafe (delete is
+    // admin-only under the existing RLS) and would lose the recorded revenue.
+    // Surface the partial failure instead of reporting full success.
+    throw new Error(
+      `Sale ${result.invoiceNumber} was saved, but inventory could not be fully updated: ${stockFailures.join('; ')}. Please review stock levels.`,
+    );
+  }
+
+  return result;
 }
+
