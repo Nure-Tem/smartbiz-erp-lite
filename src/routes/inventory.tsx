@@ -98,6 +98,46 @@ function InventoryPage() {
     },
   ];
 
+  const logColumns: Column<InventoryLog>[] = [
+    {
+      key: "product",
+      header: "Product",
+      cell: (row) => (
+        <div>
+          <p className="font-medium text-foreground">{row.productName}</p>
+          <p className="text-xs text-muted-foreground">{row.productSku}</p>
+        </div>
+      ),
+    },
+    {
+      key: "movement",
+      header: "Movement",
+      cell: (row) => (
+        <Badge variant="secondary" className="capitalize">
+          {row.movementType.replace(/_/g, " ")}
+        </Badge>
+      ),
+    },
+    { key: "quantity", header: "Quantity", cell: (row) => row.quantity },
+    {
+      key: "change",
+      header: "Stock change",
+      cell: (row) => (
+        <span className="text-sm">
+          {row.previousStock} → <span className="font-medium">{row.newStock}</span>
+        </span>
+      ),
+    },
+    { key: "reason", header: "Reason", cell: (row) => row.reason ?? "—" },
+    {
+      key: "date",
+      header: "Date",
+      cell: (row) => new Date(row.createdAt).toLocaleString(),
+    },
+  ];
+
+
+
   return (
     <AppLayout>
       <PageHeader
