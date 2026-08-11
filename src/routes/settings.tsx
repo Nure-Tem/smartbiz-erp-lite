@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
 import { PageHeader } from "@/components/common/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +16,8 @@ import { useTheme } from "@/hooks/use-theme";
 import { requireAuth } from "@/lib/route-guards";
 import { listProfiles, profileDisplayName, profileInitials } from "@/lib/api/profiles";
 import { LoadingSpinner } from "@/components/common/loading-spinner";
+import { settingsQuery } from "@/lib/queries";
+import { saveSettings, type SaveSettingsInput } from "@/lib/api/settings";
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: requireAuth,
@@ -31,11 +34,39 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const { theme, toggle } = useTheme();
+  const qc = useQueryClient();
 
   const profilesQuery = useQuery({
     queryKey: ["profiles"],
     queryFn: listProfiles,
   });
+
+  const business = useQuery(settingsQuery);
+
+  const [form, setForm] = useState<SaveSettingsInput>({
+    businessName: "",
+    businessLogoUrl: "",
+    currency: "ETB",
+    taxPercentage: 0,
+    receiptFooter: "",
+  });
+
+  useEffect(() => {
+    if (business.data) {
+      const { id: _id, ...rest } = business.data;
+      setForm(rest);
+    }
+  }, [business.data]);
+
+  const save = useMutation({
+    mutationFn: () => saveSettings(form),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      toast.success("Company details saved");
+    },
+    onError: (error: Error) => toast.error(error.message || "Could not save settings"),
+  });
+
 
   return (
     <AppLayout>
