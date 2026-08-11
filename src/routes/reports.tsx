@@ -17,9 +17,15 @@ import {
 import { AppLayout } from "@/components/layout/app-layout";
 import { PageHeader } from "@/components/common/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { revenueTrend, salesByCategory, weeklyOrders } from "@/lib/mock/db";
-import { productsQuery, salesQuery } from "@/lib/queries";
+import { categoriesQuery, productsQuery, salesQuery } from "@/lib/queries";
+import {
+  costOfGoodsSold,
+  ordersByDay,
+  revenueByCategory,
+  revenueByMonth,
+} from "@/lib/analytics";
 import { currency } from "@/lib/format";
+
 import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/reports")({
