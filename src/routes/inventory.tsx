@@ -44,6 +44,8 @@ function statusOf(p: Product) {
 
 function InventoryPage() {
   const products = useQuery(productsQuery);
+  const logs = useQuery(inventoryLogsQuery);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
