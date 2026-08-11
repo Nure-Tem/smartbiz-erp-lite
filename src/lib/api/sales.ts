@@ -1,4 +1,6 @@
 import { supabase } from '../supabase';
+import { createSaleInventoryLog } from './inventory';
+
 
 /**
  * Sales API — reads/writes the existing Supabase `sales` and `sale_items` tables.
