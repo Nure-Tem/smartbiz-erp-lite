@@ -26,8 +26,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/common/loading-spinner";
 import { currency } from "@/lib/format";
-import { revenueTrend, weeklyOrders } from "@/lib/mock/db";
+import { ordersByDay, revenueByMonth } from "@/lib/analytics";
 import { customersQuery, productsQuery, salesQuery } from "@/lib/queries";
+
 import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/")({
