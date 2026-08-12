@@ -56,7 +56,10 @@ function NavLinks({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <nav className="flex flex-col gap-1 px-3">
+    <nav aria-label="Main navigation" className="flex flex-col gap-0.5 px-3 pb-4">
+      <p className="px-3 pb-2 pt-1 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground">
+        Workspace
+      </p>
       {NAV.filter((item) => !("adminOnly" in item && item.adminOnly) || isAdmin).map(
         ({ to, label, icon: Icon }) => {
           const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
@@ -65,15 +68,23 @@ function NavLinks({
               key={to}
               to={to}
               onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 active
-                  ? "bg-primary text-primary-foreground shadow-sm"
+                  ? "bg-primary/10 font-semibold text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary transition-opacity",
+                  active ? "opacity-100" : "opacity-0",
+                )}
+              />
               <Icon className="size-4 shrink-0" />
-              {label}
+              <span className="truncate">{label}</span>
             </Link>
           );
         },
@@ -84,17 +95,18 @@ function NavLinks({
 
 function Brand() {
   return (
-    <div className="flex items-center gap-2.5 px-5 py-5">
-      <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+    <div className="flex items-center gap-2.5 border-b border-border px-5 py-[1.15rem]">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
         <Boxes className="size-5" />
       </div>
-      <div className="leading-tight">
-        <p className="text-sm font-semibold text-foreground">SmartBiz ERP</p>
-        <p className="text-xs text-muted-foreground">Lite edition</p>
+      <div className="min-w-0 leading-tight">
+        <p className="truncate text-sm font-semibold text-foreground">SmartBiz ERP</p>
+        <p className="truncate text-xs text-muted-foreground">Lite edition</p>
       </div>
     </div>
   );
 }
+
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
