@@ -11,13 +11,16 @@ export function ErrorState({
   onRetry?: (() => void) | undefined;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-12 text-center">
-      <div className="flex size-11 items-center justify-center rounded-full bg-destructive/10">
+    <div
+      role="alert"
+      className="flex flex-col items-center justify-center gap-4 rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-14 text-center"
+    >
+      <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10">
         <AlertTriangle className="size-5 text-destructive" />
       </div>
-      <div>
-        <p className="font-medium text-foreground">{title}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      <div className="max-w-md">
+        <p className="text-base font-semibold text-foreground">{title}</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{description}</p>
       </div>
       {onRetry ? (
         <Button size="sm" variant="outline" onClick={onRetry}>

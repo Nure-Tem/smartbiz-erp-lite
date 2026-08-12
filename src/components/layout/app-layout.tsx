@@ -56,7 +56,10 @@ function NavLinks({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <nav className="flex flex-col gap-1 px-3">
+    <nav aria-label="Main navigation" className="flex flex-col gap-0.5 px-3 pb-4">
+      <p className="px-3 pb-2 pt-1 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground">
+        Workspace
+      </p>
       {NAV.filter((item) => !("adminOnly" in item && item.adminOnly) || isAdmin).map(
         ({ to, label, icon: Icon }) => {
           const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
@@ -65,15 +68,23 @@ function NavLinks({
               key={to}
               to={to}
               onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 active
-                  ? "bg-primary text-primary-foreground shadow-sm"
+                  ? "bg-primary/10 font-semibold text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary transition-opacity",
+                  active ? "opacity-100" : "opacity-0",
+                )}
+              />
               <Icon className="size-4 shrink-0" />
-              {label}
+              <span className="truncate">{label}</span>
             </Link>
           );
         },
@@ -84,17 +95,18 @@ function NavLinks({
 
 function Brand() {
   return (
-    <div className="flex items-center gap-2.5 px-5 py-5">
-      <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+    <div className="flex items-center gap-2.5 border-b border-border px-5 py-[1.15rem]">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
         <Boxes className="size-5" />
       </div>
-      <div className="leading-tight">
-        <p className="text-sm font-semibold text-foreground">SmartBiz ERP</p>
-        <p className="text-xs text-muted-foreground">Lite edition</p>
+      <div className="min-w-0 leading-tight">
+        <p className="truncate text-sm font-semibold text-foreground">SmartBiz ERP</p>
+        <p className="truncate text-xs text-muted-foreground">Lite edition</p>
       </div>
     </div>
   );
 }
+
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -141,7 +153,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </Sheet>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:px-6">
           <Button
             variant="ghost"
             size="icon"
@@ -152,26 +164,49 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <Menu className="size-5" />
           </Button>
 
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="icon" aria-label="Toggle dark mode" onClick={toggle}>
+          <div className="ml-auto flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              onClick={toggle}
+            >
               {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2 px-2">
+                <Button
+                  variant="ghost"
+                  aria-label="Open account menu"
+                  className="h-11 gap-2.5 rounded-full px-1.5 sm:rounded-lg sm:px-2"
+                >
                   <Avatar className="size-8">
                     <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden text-sm font-medium capitalize sm:inline">
-                    {displayName}
+                  <span className="hidden min-w-0 flex-col items-start leading-tight sm:flex">
+                    <span className="max-w-[10rem] truncate text-sm font-medium capitalize">
+                      {displayName}
+                    </span>
+                    <span className="max-w-[10rem] truncate text-xs text-muted-foreground">
+                      {displayEmail}
+                    </span>
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel className="truncate">
-                  {displayEmail}
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="space-y-1.5 py-2.5">
+                  <p className="truncate text-sm font-semibold capitalize">{displayName}</p>
+                  <p className="truncate text-xs font-normal text-muted-foreground">
+                    {displayEmail}
+                  </p>
+                  {user?.role ? (
+                    <span className="inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[0.7rem] font-semibold capitalize text-primary">
+                      {user.role}
+                    </span>
+                  ) : null}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {isAdmin ? (
@@ -205,7 +240,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">{children}</main>
+        <main className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">{children}</main>
+
       </div>
     </div>
   );

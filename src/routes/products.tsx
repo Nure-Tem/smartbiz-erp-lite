@@ -16,7 +16,7 @@ import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { StockBadge, stockLevel } from "@/components/common/status-badge";
 import {
   Select,
   SelectContent,
@@ -205,18 +205,21 @@ function ProductsPage() {
     {
       key: "selling",
       header: "Selling",
-      cell: (row) => <span className="font-medium">{currency(row.sellingPrice)}</span>,
+      cell: (row) => (
+        <span className="font-medium tabular-nums">{currency(row.sellingPrice)}</span>
+      ),
     },
     {
       key: "stock",
       header: "Stock",
       cell: (row) => (
         <div className="flex items-center gap-2">
-          <span>{row.stock}</span>
+          <span className="tabular-nums font-medium">{row.stock}</span>
           {row.stock <= row.minStock ? (
-            <Badge variant="secondary" className="bg-destructive/10 text-destructive">
-              Low
-            </Badge>
+            <StockBadge
+              level={stockLevel(row.stock, row.minStock)}
+              label={row.stock <= 0 ? "Out" : "Low"}
+            />
           ) : null}
         </div>
       ),

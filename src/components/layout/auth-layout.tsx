@@ -46,7 +46,7 @@ export function AuthLayout({
         <p className="relative text-xs text-primary-foreground/60">© 2026 SmartBiz ERP Lite</p>
       </div>
 
-      <div className="flex items-center justify-center bg-background p-6 sm:p-8">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 sm:p-8 lg:min-h-0">
         <div className="w-full max-w-sm space-y-6">
           <div className="flex items-center gap-2.5 lg:hidden">
             <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
@@ -58,7 +58,7 @@ export function AuthLayout({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-7">
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-lg shadow-primary/5 sm:p-8">
             <div className="mb-6">
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
               <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
@@ -67,6 +67,10 @@ export function AuthLayout({
           </div>
 
           {footer ? <div className="text-center text-sm text-muted-foreground">{footer}</div> : null}
+
+          <p className="pt-2 text-center text-xs text-muted-foreground lg:hidden">
+            © 2026 SmartBiz ERP Lite
+          </p>
         </div>
       </div>
     </div>

@@ -43,10 +43,15 @@
   --color-primary-glow: var(--primary-glow);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-strong: var(--success-strong);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-strong: var(--warning-strong);
+  --color-telebirr: var(--telebirr);
+  --color-telebirr-foreground: var(--telebirr-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -85,8 +90,12 @@
   --accent-foreground: oklch(0.99 0.01 155);
   --success: oklch(0.68 0.16 155);
   --success-foreground: oklch(0.99 0.01 155);
+  --success-strong: oklch(0.45 0.13 155);
   --warning: oklch(0.78 0.16 75);
   --warning-foreground: oklch(0.25 0.05 75);
+  --warning-strong: oklch(0.48 0.11 68);
+  --telebirr: oklch(0.48 0.11 205);
+  --telebirr-foreground: oklch(0.99 0.01 205);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(0.929 0.013 255.508);
@@ -125,8 +134,12 @@
   --accent-foreground: oklch(0.16 0.03 158);
   --success: oklch(0.7 0.16 158);
   --success-foreground: oklch(0.16 0.03 158);
+  --success-strong: oklch(0.82 0.14 158);
   --warning: oklch(0.8 0.15 78);
   --warning-foreground: oklch(0.2 0.04 78);
+  --warning-strong: oklch(0.86 0.13 80);
+  --telebirr: oklch(0.62 0.12 205);
+  --telebirr-foreground: oklch(0.15 0.03 205);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(1 0 0 / 10%);
@@ -155,6 +168,17 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+  }
+}
+
+@layer base {
+  :where(a, button, [role="button"], input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  h1, h2, h3 {
+    letter-spacing: -0.015em;
   }
 }
 

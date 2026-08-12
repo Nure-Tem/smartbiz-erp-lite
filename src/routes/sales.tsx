@@ -10,7 +10,7 @@ import { DataTable, type Column } from "@/components/common/data-table";
 import { TablePagination } from "@/components/common/table-pagination";
 import { EmptyState } from "@/components/common/empty-state";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { PaymentBadge } from "@/components/common/status-badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -45,13 +45,6 @@ export const Route = createFileRoute("/sales")({
   }),
   component: SalesPage,
 });
-
-const tone: Record<string, string> = {
-  cash: "bg-success/15 text-success",
-  bank: "bg-primary/15 text-primary",
-  credit: "bg-warning/20 text-warning-foreground",
-  telebirr: "bg-teal-700 text-white dark:bg-teal-500 dark:text-teal-950",
-};
 
 const PAGE_SIZE = 8;
 
@@ -187,15 +180,15 @@ function SalesPage() {
     {
       key: "total",
       header: "Total",
-      cell: (row) => <span className="font-semibold">{currency(row.total)}</span>,
+      cell: (row) => (
+        <span className="font-semibold tabular-nums">{currency(row.total)}</span>
+      ),
     },
     {
       key: "status",
       header: "Payment method",
       cell: (row) => (
-        <Badge variant="secondary" className={tone[row.paymentMethod] ?? ""}>
-          {row.paymentMethod}
-        </Badge>
+        <PaymentBadge method={row.paymentMethod} />
       ),
     },
     { key: "date", header: "Date", cell: (row) => row.date },
@@ -388,9 +381,11 @@ function SalesPage() {
                 </div>
               ))}
 
-              <div className="flex items-center justify-between border-t border-border pt-3">
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-lg font-semibold text-foreground">{currency(total)}</p>
+              <div className="flex items-center justify-between rounded-lg border border-primary/25 bg-primary/5 px-3 py-3">
+                <p className="text-sm font-medium text-muted-foreground">Total</p>
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-primary">
+                  {currency(total)}
+                </p>
               </div>
             </div>
           </div>
