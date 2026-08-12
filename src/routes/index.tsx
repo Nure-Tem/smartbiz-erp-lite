@@ -22,7 +22,7 @@ import {
 import { AppLayout } from "@/components/layout/app-layout";
 import { PageHeader } from "@/components/common/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { PaymentBadge, StockBadge } from "@/components/common/status-badge";
 import { LoadingSpinner } from "@/components/common/loading-spinner";
 import { currency } from "@/lib/format";
 import { ordersByDay, revenueByMonth } from "@/lib/analytics";
@@ -49,12 +49,6 @@ export const Route = createFileRoute("/")({
   }),
   component: DashboardPage,
 });
-
-const statusTone: Record<string, string> = {
-  paid: "bg-success/15 text-success",
-  pending: "bg-warning/20 text-warning-foreground",
-  partial: "bg-primary/15 text-primary",
-};
 
 function DashboardPage() {
   const products = useQuery(productsQuery);
@@ -107,21 +101,20 @@ function DashboardPage() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {cards.map(({ label, value, icon: Icon, hint }) => (
-              <Card key={label} className="rounded-xl">
+              <Card key={label} className="rounded-xl shadow-sm transition-shadow hover:shadow-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {label}
                   </CardTitle>
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                     <Icon className="size-4 text-primary" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-semibold text-foreground">{value}</p>
-                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    {hint}
+                  <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+                    {value}
                   </p>
-
+                  <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>
                 </CardContent>
               </Card>
             ))}
@@ -213,7 +206,7 @@ function DashboardPage() {
                 {(sales.data ?? []).slice(0, 5).map((sale) => (
                   <div
                     key={sale.id}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/40"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">
@@ -224,10 +217,8 @@ function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge className={statusTone[sale.paymentMethod]} variant="secondary">
-                        {sale.paymentMethod}
-                      </Badge>
-                      <span className="text-sm font-semibold text-foreground">
+                      <PaymentBadge method={sale.paymentMethod} />
+                      <span className="text-sm font-semibold tabular-nums text-foreground">
                         {currency(sale.total)}
                       </span>
                     </div>
@@ -246,14 +237,18 @@ function DashboardPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {stats.lowStock.slice(0, 5).map((product) => (
-                  <div key={product.id} className="flex items-center justify-between gap-3">
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+                  >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">{product.name}</p>
                       <p className="text-xs text-muted-foreground">{product.sku}</p>
                     </div>
-                    <span className="rounded-md bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
-                      {product.stock}/{product.minStock}
-                    </span>
+                    <StockBadge
+                      level={product.stock <= 0 ? "out" : "low"}
+                      label={`${product.stock} / ${product.minStock}`}
+                    />
                   </div>
                 ))}
               </CardContent>

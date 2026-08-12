@@ -37,9 +37,9 @@ export const Route = createFileRoute("/inventory")({
 });
 
 function statusOf(p: Product) {
-  if (p.stock === 0) return { label: "Out of stock", cls: "bg-destructive/10 text-destructive" };
-  if (p.stock <= p.minStock) return { label: "Low stock", cls: "bg-warning/20 text-warning-foreground" };
-  return { label: "In stock", cls: "bg-success/15 text-success" };
+  if (p.stock === 0) return { label: "Out of stock", level: "out" as const };
+  if (p.stock <= p.minStock) return { label: "Low stock", level: "low" as const };
+  return { label: "In stock", level: "ok" as const };
 }
 
 function InventoryPage() {
@@ -90,7 +90,7 @@ function InventoryPage() {
       cell: (row) => {
         const s = statusOf(row);
         return (
-          <Badge variant="secondary" className={s.cls}>
+          <StockBadge level={s.level} label={s.label} />
             {s.label}
           </Badge>
         );
