@@ -30,12 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { currency } from "@/lib/format";
 import { createSale, type Sale } from "@/lib/api/sales";
-import {
-  customersQuery,
-  paymentMethodsQuery,
-  productsQuery,
-  salesQuery,
-} from "@/lib/queries";
+import { customersQuery, productsQuery, salesQuery } from "@/lib/queries";
 import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/sales")({
@@ -43,9 +38,9 @@ export const Route = createFileRoute("/sales")({
   head: () => ({
     meta: [
       { title: "Sales — SmartBiz ERP Lite" },
-      { name: "description", content: "Review invoices, totals and payment status for every sale." },
+      { name: "description", content: "Review invoices, totals and payment methods for every sale." },
       { property: "og:title", content: "Sales — SmartBiz ERP Lite" },
-      { property: "og:description", content: "Invoice list with payment status tracking." },
+      { property: "og:description", content: "Invoice list with payment method tracking." },
     ],
   }),
   component: SalesPage,
@@ -53,9 +48,9 @@ export const Route = createFileRoute("/sales")({
 
 const tone: Record<string, string> = {
   cash: "bg-success/15 text-success",
-  paid: "bg-success/15 text-success",
-  pending: "bg-warning/20 text-warning-foreground",
-  partial: "bg-primary/15 text-primary",
+  bank: "bg-primary/15 text-primary",
+  credit: "bg-warning/20 text-warning-foreground",
+  telebirr: "bg-teal-700 text-white dark:bg-teal-500 dark:text-teal-950",
 };
 
 const PAGE_SIZE = 8;
@@ -66,6 +61,9 @@ const PAYMENT_METHODS = [
   { value: "credit", label: "Credit" },
   { value: "telebirr", label: "Telebirr" },
 ] as const;
+
+/** Sentinel for walk-in; maps to customer_id = null in the database. */
+const WALK_IN_VALUE = "__walk_in__";
 
 interface LineItem {
   key: string;
@@ -79,23 +77,24 @@ const newLine = (): LineItem => ({
   quantity: 1,
 });
 
+function isPartialInventoryFailure(message: string) {
+  return message.includes("was saved") && message.toLowerCase().includes("inventory");
+}
+
 function SalesPage() {
   const qc = useQueryClient();
   const sales = useQuery(salesQuery);
   const customers = useQuery(customersQuery);
   const products = useQuery(productsQuery);
-  const paymentMethods = useQuery(paymentMethodsQuery);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const [customerId, setCustomerId] = useState("");
+  const [customerId, setCustomerId] = useState(WALK_IN_VALUE);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [lines, setLines] = useState<LineItem[]>([newLine()]);
-
-  const methodOptions = paymentMethods.data ?? [];
 
   const customerName = (id: string | null) =>
     (customers.data ?? []).find((c) => c.id === id)?.name ?? "Walk-in customer";
@@ -126,7 +125,7 @@ function SalesPage() {
   );
 
   const resetForm = () => {
-    setCustomerId("");
+    setCustomerId(WALK_IN_VALUE);
     setPaymentMethod("");
     setLines([newLine()]);
   };
@@ -134,7 +133,7 @@ function SalesPage() {
   const saveSale = useMutation({
     mutationFn: () =>
       createSale({
-        customerId: customerId || null,
+        customerId: customerId === WALK_IN_VALUE || !customerId ? null : customerId,
         paymentMethod,
         lines: lines
           .filter((l) => l.productId && l.quantity > 0)
@@ -161,9 +160,18 @@ function SalesPage() {
       qc.invalidateQueries({ queryKey: ["sales"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["inventory-logs"] });
-      toast.error(error.message || "Could not record the sale");
-    },
 
+      const message = error.message || "Could not record the sale";
+      if (isPartialInventoryFailure(message)) {
+        // Sale already exists — close the form so the user does not retry and duplicate it.
+        toast.warning(message);
+        setDialogOpen(false);
+        resetForm();
+        return;
+      }
+
+      toast.error(message);
+    },
   });
 
   const canSubmit =
@@ -185,7 +193,7 @@ function SalesPage() {
       key: "status",
       header: "Payment method",
       cell: (row) => (
-        <Badge variant="secondary" className={tone[row.paymentMethod]}>
+        <Badge variant="secondary" className={tone[row.paymentMethod] ?? ""}>
           {row.paymentMethod}
         </Badge>
       ),
@@ -197,7 +205,7 @@ function SalesPage() {
     <AppLayout>
       <PageHeader
         title="Sales"
-        description="Invoice history. Recording a sale saves the invoice and its line items — stock deduction comes later."
+        description="Invoice history. Recording a sale saves the invoice, deducts stock, and writes an inventory log."
         actions={
           <Button
             onClick={() => {
@@ -232,9 +240,9 @@ function SalesPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All methods</SelectItem>
-            {methodOptions.map((m) => (
-              <SelectItem key={m} value={m}>
-                {m}
+            {PAYMENT_METHODS.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>
+                {label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -287,6 +295,7 @@ function SalesPage() {
                     <SelectValue placeholder="Select customer" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={WALK_IN_VALUE}>Walk-in customer</SelectItem>
                     {(customers.data ?? []).map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name}

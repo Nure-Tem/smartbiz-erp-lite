@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
@@ -16,6 +16,7 @@ import {
   Users,
   Warehouse,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -30,6 +31,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/hooks/use-auth";
 import { signOut } from "@/lib/auth";
+import { setAppCurrency } from "@/lib/format";
+import { settingsQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -40,33 +43,41 @@ const NAV = [
   { to: "/sales", label: "Sales", icon: ShoppingCart },
   { to: "/inventory", label: "Inventory", icon: Warehouse },
   { to: "/reports", label: "Reports", icon: BarChart3 },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/settings", label: "Settings", icon: Settings, adminOnly: true },
 ] as const;
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks({
+  onNavigate,
+  isAdmin,
+}: {
+  onNavigate?: () => void;
+  isAdmin: boolean;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
     <nav className="flex flex-col gap-1 px-3">
-      {NAV.map(({ to, label, icon: Icon }) => {
-        const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
-        return (
-          <Link
-            key={to}
-            to={to}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              active
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <Icon className="size-4 shrink-0" />
-            {label}
-          </Link>
-        );
-      })}
+      {NAV.filter((item) => !("adminOnly" in item && item.adminOnly) || isAdmin).map(
+        ({ to, label, icon: Icon }) => {
+          const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+          return (
+            <Link
+              key={to}
+              to={to}
+              onClick={onNavigate}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                active
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <Icon className="size-4 shrink-0" />
+              {label}
+            </Link>
+          );
+        },
+      )}
     </nav>
   );
 }
@@ -89,28 +100,43 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { theme, toggle } = useTheme();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const settings = useQuery(settingsQuery);
+  const isAdmin = user?.role === "admin";
 
-  const initials = (user?.name ?? "Guest")
+  useEffect(() => {
+    if (settings.data?.currency) {
+      setAppCurrency(settings.data.currency);
+    }
+  }, [settings.data?.currency]);
+
+  const displayName = authLoading
+    ? "Loading..."
+    : user?.name?.trim() || "Profile unavailable";
+  const displayEmail = authLoading
+    ? "Checking session..."
+    : user?.email?.trim() || "Unable to load profile";
+
+  const initials = (user?.name ?? "?")
     .split(" ")
     .map((p) => p[0])
     .slice(0, 2)
     .join("")
-    .toUpperCase();
+    .toUpperCase() || "?";
 
   return (
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-sidebar lg:flex">
         <Brand />
-        <NavLinks />
+        <NavLinks isAdmin={isAdmin} />
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-64 bg-sidebar p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <Brand />
-          <NavLinks onNavigate={() => setMobileOpen(false)} />
+          <NavLinks isAdmin={isAdmin} onNavigate={() => setMobileOpen(false)} />
         </SheetContent>
       </Sheet>
 
@@ -139,30 +165,32 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     </AvatarFallback>
                   </Avatar>
                   <span className="hidden text-sm font-medium capitalize sm:inline">
-                    {user?.name ?? "Guest user"}
+                    {displayName}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel className="truncate">
-                  {user?.email ?? "guest@smartbiz.app"}
+                  {displayEmail}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
-                  <Settings className="size-4" />
-                  Settings
-                </DropdownMenuItem>
+                {isAdmin ? (
+                  <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
+                    <Settings className="size-4" />
+                    Settings
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem
                   onClick={async () => {
                     setIsSigningOut(true);
                     try {
                       const { error } = await signOut();
                       if (error) {
-                        console.error('Sign out error:', error);
+                        console.error("Sign out error:", error);
                       }
                       navigate({ to: "/login" });
                     } catch (error) {
-                      console.error('Failed to sign out:', error);
+                      console.error("Failed to sign out:", error);
                     } finally {
                       setIsSigningOut(false);
                     }

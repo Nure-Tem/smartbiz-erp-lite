@@ -14,13 +14,21 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";
 import { requireAuth } from "@/lib/route-guards";
+import { getCurrentUser } from "@/lib/auth";
 import { listProfiles, profileDisplayName, profileInitials } from "@/lib/api/profiles";
 import { LoadingSpinner } from "@/components/common/loading-spinner";
 import { settingsQuery } from "@/lib/queries";
 import { saveSettings, type SaveSettingsInput } from "@/lib/api/settings";
+import { setAppCurrency } from "@/lib/format";
 
 export const Route = createFileRoute("/settings")({
-  beforeLoad: requireAuth,
+  beforeLoad: async () => {
+    await requireAuth();
+    const user = await getCurrentUser();
+    if (!user || user.role !== "admin") {
+      throw redirect({ to: "/" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Settings — SmartBiz ERP Lite" },
@@ -60,7 +68,8 @@ function SettingsPage() {
 
   const save = useMutation({
     mutationFn: () => saveSettings(form),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      setAppCurrency(saved.currency);
       qc.invalidateQueries({ queryKey: ["settings"] });
       toast.success("Company details saved");
     },

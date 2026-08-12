@@ -39,9 +39,11 @@ function mapToCustomer(row: CustomerRow): Customer {
 function mapFromCustomer(
   customer: Omit<Customer, 'id' | 'createdAt'>,
 ): Omit<CustomerRow, 'id' | 'created_at'> {
+  const trimmedPhone = customer.phone.trim();
   return {
     name: customer.name,
-    phone: customer.phone.trim(),
+    // Store the canonical form so future duplicate checks stay consistent
+    phone: trimmedPhone ? normalizePhone(trimmedPhone) : "",
     email: customer.email,
     address: customer.address,
     credit_balance: customer.creditBalance,
@@ -123,6 +125,7 @@ export async function updateCustomer(
   if (input.name !== undefined) updateData.name = input.name;
   if (input.phone !== undefined) {
     const trimmedPhone = input.phone.trim();
+    const normalizedPhone = trimmedPhone ? normalizePhone(trimmedPhone) : "";
 
     const { data: existing, error: existingError } = await supabase
       .from('customers')
@@ -135,13 +138,13 @@ export async function updateCustomer(
     }
 
     const phoneChanged =
-      normalizePhone(existing.phone) !== normalizePhone(trimmedPhone);
+      normalizePhone(existing.phone) !== normalizePhone(normalizedPhone);
 
     if (phoneChanged) {
-      await assertPhoneAvailable(trimmedPhone, id);
+      await assertPhoneAvailable(normalizedPhone, id);
     }
 
-    updateData.phone = trimmedPhone;
+    updateData.phone = normalizedPhone;
   }
   if (input.email !== undefined) updateData.email = input.email;
   if (input.address !== undefined) updateData.address = input.address;

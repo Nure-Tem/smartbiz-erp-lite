@@ -41,23 +41,29 @@ function LoginPage() {
     setIsLoading(true);
     try {
       const { user, error } = await signIn(values.email, values.password);
-      
+
       if (error) {
-        toast.error("Sign in failed", { 
-          description: error.message || "Please check your credentials and try again." 
+        toast.error("Sign in failed", {
+          description: error.message || "Please check your credentials and try again.",
         });
         return;
       }
 
-      if (user) {
-        toast.success("Welcome back", { 
-          description: `Signed in as ${user.email}` 
+      if (!user) {
+        toast.error("Profile unavailable", {
+          description:
+            "You are authenticated, but your profile could not be loaded. Please try again.",
         });
-        navigate({ to: "/" });
+        return;
       }
-    } catch (error) {
-      toast.error("Sign in failed", { 
-        description: "An unexpected error occurred. Please try again." 
+
+      toast.success("Welcome back", {
+        description: `Signed in as ${user.email}`,
+      });
+      navigate({ to: "/" });
+    } catch {
+      toast.error("Sign in failed", {
+        description: "An unexpected error occurred. Please try again.",
       });
     } finally {
       setIsLoading(false);

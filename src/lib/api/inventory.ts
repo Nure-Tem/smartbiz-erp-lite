@@ -5,6 +5,8 @@ import { supabase } from '../supabase';
  *
  * inventory_logs: id, product_id, movement_type (enum), quantity,
  *                 previous_stock, new_stock, reason, created_by, created_at
+ *
+ * inventory_movement_type enum: sale | stock_increase | stock_decrease | adjustment
  */
 
 interface InventoryLogRow {
@@ -33,6 +35,9 @@ export interface InventoryLog {
   createdBy: string | null;
   createdAt: string;
 }
+
+/** Confirmed Postgres enum value for sale movements. */
+export const SALE_MOVEMENT_TYPE = 'sale' as const;
 
 function mapLog(row: InventoryLogRow): InventoryLog {
   return {
@@ -65,38 +70,6 @@ export async function listInventoryLogs(limit = 50): Promise<InventoryLog[]> {
   return (data ?? []).map((row) => mapLog(row as InventoryLogRow));
 }
 
-/**
- * `movement_type` is a Postgres enum whose values we must not invent.
- * Existing rows are the only safe client-side source of truth, so we look for
- * an already-used value that represents an outgoing/sale movement. If the
- * table is still empty we fall back to the conventional candidates in order,
- * letting Postgres reject invalid ones.
- */
-const SALE_MOVEMENT_CANDIDATES = ['sale', 'sales', 'out', 'stock_out', 'outgoing', 'remove'];
-
-let cachedSaleMovementType: string | null = null;
-
-export async function resolveSaleMovementType(): Promise<string | null> {
-  if (cachedSaleMovementType) return cachedSaleMovementType;
-
-  const { data, error } = await supabase
-    .from('inventory_logs')
-    .select('movement_type')
-    .limit(200);
-
-  if (error || !data) return null;
-
-  const used = Array.from(new Set(data.map((r) => String(r.movement_type)))).filter(Boolean);
-  const match = used.find((v) => SALE_MOVEMENT_CANDIDATES.includes(v.toLowerCase()));
-
-  if (match) {
-    cachedSaleMovementType = match;
-    return match;
-  }
-
-  return null;
-}
-
 export interface StockMovementInput {
   productId: string;
   quantity: number;
@@ -106,43 +79,19 @@ export interface StockMovementInput {
   createdBy: string | null;
 }
 
-/**
- * Insert an inventory log row using the enum value already present in the
- * database when possible, otherwise trying known candidate values until one is
- * accepted by the enum. Throws if none can be written.
- */
+/** Insert an inventory log for a completed sale using movement_type = "sale". */
 export async function createSaleInventoryLog(input: StockMovementInput): Promise<void> {
-  const resolved = await resolveSaleMovementType();
-  const candidates = resolved
-    ? [resolved, ...SALE_MOVEMENT_CANDIDATES.filter((c) => c !== resolved)]
-    : SALE_MOVEMENT_CANDIDATES;
+  const { error } = await supabase.from('inventory_logs').insert({
+    product_id: input.productId,
+    movement_type: SALE_MOVEMENT_TYPE,
+    quantity: input.quantity,
+    previous_stock: input.previousStock,
+    new_stock: input.newStock,
+    reason: input.reason,
+    created_by: input.createdBy,
+  });
 
-  let lastError: string | null = null;
-
-  for (const movementType of candidates) {
-    const { error } = await supabase.from('inventory_logs').insert({
-      product_id: input.productId,
-      movement_type: movementType,
-      quantity: input.quantity,
-      previous_stock: input.previousStock,
-      new_stock: input.newStock,
-      reason: input.reason,
-      created_by: input.createdBy,
-    });
-
-    if (!error) {
-      cachedSaleMovementType = movementType;
-      return;
-    }
-
-    lastError = error.message;
-
-    // Only keep probing when the enum value itself was rejected.
-    const enumRejected =
-      error.message.includes('invalid input value for enum') ||
-      error.code === '22P02';
-    if (!enumRejected) break;
+  if (error) {
+    throw new Error(`Failed to record inventory log: ${error.message}`);
   }
-
-  throw new Error(`Failed to record inventory log: ${lastError ?? 'unknown error'}`);
 }

@@ -293,9 +293,9 @@ export async function createSale(input: CreateSaleInput): Promise<Sale> {
   if (stockFailures.length > 0) {
     // The sale and its items exist; deleting them here is unsafe (delete is
     // admin-only under the existing RLS) and would lose the recorded revenue.
-    // Surface the partial failure instead of reporting full success.
+    // Surface a partial-failure message that must NOT encourage creating another sale.
     throw new Error(
-      `Sale ${result.invoiceNumber} was saved, but inventory could not be fully updated: ${stockFailures.join('; ')}. Please review stock levels.`,
+      `Sale ${result.invoiceNumber} was saved, but inventory could not be fully updated: ${stockFailures.join('; ')}. Do not save this sale again — review stock levels and inventory logs instead.`,
     );
   }
 

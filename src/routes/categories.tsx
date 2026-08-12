@@ -28,6 +28,7 @@ import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { createCategory, updateCategory, deleteCategory } from "@/lib/api/categories";
 import type { Category } from "@/lib/mock/types";
 import { requireAuth } from "@/lib/route-guards";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/categories")({
   beforeLoad: requireAuth,
@@ -50,6 +51,8 @@ type FormValues = z.infer<typeof schema>;
 
 function CategoriesPage() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const categories = useQuery(categoriesQuery);
   const products = useQuery(productsQuery);
   const [search, setSearch] = useState("");
@@ -145,15 +148,17 @@ function CategoriesPage() {
           <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => openEdit(row)}>
             <Pencil className="size-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Delete"
-            className="text-destructive"
-            onClick={() => setDeleting(row)}
-          >
-            <Trash2 className="size-4" />
-          </Button>
+          {isAdmin ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Delete"
+              className="text-destructive"
+              onClick={() => setDeleting(row)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          ) : null}
         </div>
       ),
     },

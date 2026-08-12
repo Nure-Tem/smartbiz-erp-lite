@@ -142,7 +142,7 @@ function InventoryPage() {
     <AppLayout>
       <PageHeader
         title="Inventory"
-        description="Stock health across your catalogue. Transactions arrive later."
+        description="Stock health across your catalogue, plus recent stock movements from sales."
       />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchBar value={search} onChange={setSearch} placeholder="Search product or SKU" />

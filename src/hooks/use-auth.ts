@@ -3,47 +3,42 @@ import { getCurrentUser, getStoredUser, initAuthListener } from '@/lib/auth';
 import type { AuthUser } from '@/lib/mock/types';
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => getStoredUser());
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize auth state listener
     initAuthListener();
 
-    // Check for existing session
-    const initAuth = async () => {
+    let cancelled = false;
+
+    const syncUser = async (showLoading: boolean) => {
+      if (showLoading) setLoading(true);
       try {
-        setLoading(true);
         const currentUser = await getCurrentUser();
-        setUser(currentUser);
+        if (!cancelled) setUser(currentUser);
       } catch (error) {
-        console.error('Failed to initialize auth:', error);
-        // Fallback to stored user if available
-        setUser(getStoredUser());
+        console.error('Failed to sync auth state:', error);
+        if (!cancelled) setUser(getStoredUser());
       } finally {
-        setLoading(false);
-        setReady(true);
+        if (!cancelled) {
+          setLoading(false);
+          setReady(true);
+        }
       }
     };
 
-    initAuth();
+    void syncUser(true);
 
-    // Listen for auth changes
-    const handleAuthChange = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Failed to sync auth state:', error);
-        setUser(getStoredUser());
-      }
+    const handleAuthChange = () => {
+      void syncUser(false);
     };
 
     window.addEventListener('smartbiz-auth', handleAuthChange);
     window.addEventListener('storage', handleAuthChange);
 
     return () => {
+      cancelled = true;
       window.removeEventListener('smartbiz-auth', handleAuthChange);
       window.removeEventListener('storage', handleAuthChange);
     };

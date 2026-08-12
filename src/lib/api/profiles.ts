@@ -1,15 +1,17 @@
 import { supabase } from '../supabase';
 
 /**
- * Profile type based on database schema.
- * Covers the most common column naming conventions.
+ * Profile type based on the existing public.profiles schema.
+ * Email comes from Supabase Auth, not from the profiles table.
  */
 export interface Profile {
   id: string;
-  email: string;
+  email?: string;
   name?: string;
   full_name?: string;
-  role: string;           // Raw value from DB e.g. "Admin", "Cashier"
+  role: string;
+  phone?: string;
+  avatar_url?: string;
   company?: string;
   created_at?: string;
   updated_at?: string;
@@ -25,9 +27,9 @@ export async function getCurrentUserProfile(): Promise<Profile | null> {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, full_name, role, phone, avatar_url, created_at, updated_at')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError) {
       console.error('Profile fetch error:', profileError);
@@ -67,7 +69,8 @@ export function profileDisplayName(profile: Profile): string {
   return (
     profile.full_name?.trim() ||
     profile.name?.trim() ||
-    (profile.email.split('@')[0] ?? '').replace(/[._-]/g, ' ')
+    (profile.email?.split('@')[0] ?? '').replace(/[._-]/g, ' ') ||
+    'User'
   );
 }
 

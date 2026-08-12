@@ -37,6 +37,7 @@ import { createProduct, updateProduct, deleteProduct } from "@/lib/api/products"
 import { currency } from "@/lib/format";
 import type { Product } from "@/lib/mock/types";
 import { requireAuth } from "@/lib/route-guards";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/products")({
   beforeLoad: requireAuth,
@@ -67,6 +68,8 @@ const PAGE_SIZE = 8;
 
 function ProductsPage() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const products = useQuery(productsQuery);
   const categories = useQuery(categoriesQuery);
 
@@ -228,15 +231,17 @@ function ProductsPage() {
           <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => openEdit(row)}>
             <Pencil className="size-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Delete"
-            className="text-destructive"
-            onClick={() => setDeleting(row)}
-          >
-            <Trash2 className="size-4" />
-          </Button>
+          {isAdmin ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Delete"
+              className="text-destructive"
+              onClick={() => setDeleting(row)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          ) : null}
         </div>
       ),
     },

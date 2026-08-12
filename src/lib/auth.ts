@@ -1,61 +1,101 @@
+import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import type { AuthUser } from './mock/types';
 
 const STORAGE_KEY = 'smartbiz.auth.user';
 
+type ProfileRow = {
+  id: string;
+  full_name?: string | null;
+  name?: string | null;
+  role?: string | null;
+  phone?: string | null;
+  avatar_url?: string | null;
+};
+
+function normalizeRole(role: unknown): 'admin' | 'cashier' | null {
+  const raw = String(role ?? '').trim().toLowerCase();
+  if (raw === 'admin' || raw === 'cashier') return raw;
+  return null;
+}
+
+function mapAuthUser(user: User, profile: ProfileRow): AuthUser | null {
+  const role = normalizeRole(profile.role);
+  if (!role) {
+    console.error('Profile has unknown or missing role:', profile.role);
+    return null;
+  }
+
+  const email = user.email || '';
+  const nameFromProfile = (profile.full_name || profile.name || '').trim();
+  const nameFromEmail = email.split('@')[0]?.replace(/[._-]/g, ' ') || 'User';
+
+  return {
+    id: profile.id || user.id,
+    name: nameFromProfile || nameFromEmail,
+    email,
+    role,
+  };
+}
+
+function persistUser(authUser: AuthUser | null) {
+  if (typeof window === 'undefined') return;
+  if (authUser) {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
+  } else {
+    window.localStorage.removeItem(STORAGE_KEY);
+  }
+}
+
 /**
- * Get the currently authenticated user from Supabase Auth + Profiles table
+ * Load role/display info from profiles using an already-known auth user.
+ * Does not call getUser() again (avoids auth lock contention after sign-in).
+ */
+export async function loadAuthUserFromSessionUser(user: User): Promise<AuthUser | null> {
+  // Select only columns that exist on public.profiles (no email column).
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, full_name, role, phone, avatar_url')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error('Failed to fetch profile:', profileError);
+    persistUser(null);
+    return null;
+  }
+
+  if (!profile) {
+    console.error('No profile row found for authenticated user:', user.id);
+    persistUser(null);
+    return null;
+  }
+
+  const authUser = mapAuthUser(user, profile as ProfileRow);
+  persistUser(authUser);
+  return authUser;
+}
+
+/**
+ * Get the currently authenticated user from Supabase Auth + Profiles table.
+ * Fail closed: never invent an admin role when the profile is unavailable.
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
-    // Get authenticated user from Supabase Auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
+      persistUser(null);
       return null;
     }
 
-    // Fetch user profile from profiles table (source of truth for role)
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError) {
-      console.error('Failed to fetch profile:', profileError);
-      // Fallback to basic user info if profile fetch fails
-      const authUser: AuthUser = {
-        id: user.id,
-        name: user.user_metadata?.['name'] || user.email?.split('@')[0]?.replace(/[._-]/g, ' ') || 'User',
-        email: user.email || '',
-        role: 'admin', // Default fallback
-      };
-      
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
-      }
-      
-      return authUser;
-    }
-
-    // Map profile data to AuthUser type
-    // Handle both camelCase and snake_case column names
-    const authUser: AuthUser = {
-      id: profile.id,
-      name: profile.full_name || profile.name || profile.email?.split('@')[0]?.replace(/[._-]/g, ' ') || 'User',
-      email: profile.email || user.email || '',
-      role: (profile.role?.toLowerCase() === 'cashier' ? 'cashier' : 'admin') as 'admin' | 'cashier',
-    };
-
-    // Store user in localStorage for synchronous access
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
-    }
-
-    return authUser;
+    return loadAuthUserFromSessionUser(user);
   } catch (err) {
     console.error('Unexpected error in getCurrentUser:', err);
+    persistUser(null);
     return null;
   }
 }
@@ -76,7 +116,10 @@ export function getStoredUser(): AuthUser | null {
 /**
  * Sign in with email and password
  */
-export async function signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: Error | null }> {
+export async function signIn(
+  email: string,
+  password: string,
+): Promise<{ user: AuthUser | null; error: Error | null }> {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -91,17 +134,27 @@ export async function signIn(email: string, password: string): Promise<{ user: A
       return { user: null, error: new Error('No user returned from sign in') };
     }
 
-    const authUser = await getCurrentUser();
-    
+    // Use the user returned by sign-in — avoid a second getUser() round-trip.
+    const authUser = await loadAuthUserFromSessionUser(data.user);
+
+    if (!authUser) {
+      return {
+        user: null,
+        error: new Error(
+          'Signed in, but your profile could not be loaded. Please try again or contact an administrator.',
+        ),
+      };
+    }
+
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('smartbiz-auth'));
     }
 
     return { user: authUser, error: null };
   } catch (err) {
-    return { 
-      user: null, 
-      error: err instanceof Error ? err : new Error('Failed to sign in') 
+    return {
+      user: null,
+      error: err instanceof Error ? err : new Error('Failed to sign in'),
     };
   }
 }
@@ -110,9 +163,9 @@ export async function signIn(email: string, password: string): Promise<{ user: A
  * Sign up with email and password
  */
 export async function signUp(
-  email: string, 
-  password: string, 
-  metadata?: { name?: string; company?: string }
+  email: string,
+  password: string,
+  metadata?: { name?: string; company?: string },
 ): Promise<{ user: AuthUser | null; error: Error | null }> {
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -122,7 +175,7 @@ export async function signUp(
         data: {
           name: metadata?.name,
           company: metadata?.company,
-          role: 'admin', // Default role for new signups
+          role: 'admin',
         },
       },
     });
@@ -135,17 +188,17 @@ export async function signUp(
       return { user: null, error: new Error('No user returned from sign up') };
     }
 
-    const authUser = await getCurrentUser();
-    
+    const authUser = await loadAuthUserFromSessionUser(data.user);
+
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('smartbiz-auth'));
     }
 
     return { user: authUser, error: null };
   } catch (err) {
-    return { 
-      user: null, 
-      error: err instanceof Error ? err : new Error('Failed to sign up') 
+    return {
+      user: null,
+      error: err instanceof Error ? err : new Error('Failed to sign up'),
     };
   }
 }
@@ -156,36 +209,44 @@ export async function signUp(
 export async function signOut(): Promise<{ error: Error | null }> {
   try {
     const { error } = await supabase.auth.signOut();
-    
+
     if (error) {
       return { error };
     }
 
+    persistUser(null);
+
     if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(STORAGE_KEY);
       window.dispatchEvent(new Event('smartbiz-auth'));
     }
 
     return { error: null };
   } catch (err) {
-    return { 
-      error: err instanceof Error ? err : new Error('Failed to sign out') 
+    return {
+      error: err instanceof Error ? err : new Error('Failed to sign out'),
     };
   }
 }
 
+let authListenerStarted = false;
+
 /**
- * Initialize auth state listener
+ * Initialize auth state listener once.
+ * IMPORTANT: Do not await other Supabase auth/DB calls inside the callback —
+ * that can deadlock the auth client lock and hang sign-in.
  */
 export function initAuthListener() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || authListenerStarted) return;
+  authListenerStarted = true;
 
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-      await getCurrentUser();
-    } else if (event === 'SIGNED_OUT') {
-      window.localStorage.removeItem(STORAGE_KEY);
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') {
+      persistUser(null);
     }
-    window.dispatchEvent(new Event('smartbiz-auth'));
+
+    // Defer so listeners run outside the auth lock.
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('smartbiz-auth'));
+    }, 0);
   });
 }

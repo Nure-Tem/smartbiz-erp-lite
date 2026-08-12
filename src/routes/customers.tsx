@@ -30,6 +30,7 @@ import { customersQuery } from "@/lib/queries";
 import { currency } from "@/lib/format";
 import type { Customer } from "@/lib/mock/types";
 import { requireAuth } from "@/lib/route-guards";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/customers")({
   beforeLoad: requireAuth,
@@ -57,6 +58,8 @@ const PAGE_SIZE = 8;
 
 function CustomersPage() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const customers = useQuery(customersQuery);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -168,15 +171,17 @@ function CustomersPage() {
           <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => openEdit(row)}>
             <Pencil className="size-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Delete"
-            className="text-destructive"
-            onClick={() => setDeleting(row)}
-          >
-            <Trash2 className="size-4" />
-          </Button>
+          {isAdmin ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Delete"
+              className="text-destructive"
+              onClick={() => setDeleting(row)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          ) : null}
         </div>
       ),
     },
