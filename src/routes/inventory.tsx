@@ -8,6 +8,7 @@ import { SearchBar } from "@/components/common/search-bar";
 import { DataTable, type Column } from "@/components/common/data-table";
 import { EmptyState } from "@/components/common/empty-state";
 import { Badge } from "@/components/ui/badge";
+import { StockBadge } from "@/components/common/status-badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
