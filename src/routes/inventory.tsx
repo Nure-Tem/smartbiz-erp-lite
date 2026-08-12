@@ -91,8 +91,7 @@ function InventoryPage() {
         const s = statusOf(row);
         return (
           <StockBadge level={s.level} label={s.label} />
-            {s.label}
-          </Badge>
+
         );
       },
     },
