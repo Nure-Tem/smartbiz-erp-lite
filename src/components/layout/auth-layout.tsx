@@ -1,5 +1,40 @@
 import type { ReactNode } from "react";
-import { Boxes } from "lucide-react";
+
+function AuthBrand({ variant = "light" }: { variant?: "light" | "dark" }) {
+  const isDark = variant === "dark";
+
+  return (
+    <div className="flex items-center gap-2.5">
+      <img
+        src={isDark ? "/logo-icon-dark.png" : "/logo-icon.png"}
+        alt="SmartBiz"
+        width={36}
+        height={36}
+        className="size-9 shrink-0 rounded-xl object-cover shadow-sm"
+      />
+      <div>
+        <p
+          className={
+            isDark
+              ? "text-sm font-semibold text-primary-foreground"
+              : "text-sm font-semibold text-foreground"
+          }
+        >
+          SmartBiz ERP Lite
+        </p>
+        <p
+          className={
+            isDark
+              ? "text-xs text-primary-foreground/70"
+              : "text-xs text-muted-foreground"
+          }
+        >
+          Business workspace
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export function AuthLayout({
   title,
@@ -24,14 +59,8 @@ export function AuthLayout({
           }}
         />
 
-        <div className="relative flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-primary-foreground/15">
-            <Boxes className="size-5" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold">SmartBiz ERP Lite</p>
-            <p className="text-xs text-primary-foreground/70">Business workspace</p>
-          </div>
+        <div className="relative">
+          <AuthBrand variant="dark" />
         </div>
 
         <div className="relative max-w-md space-y-3">
@@ -48,14 +77,8 @@ export function AuthLayout({
 
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 sm:p-8 lg:min-h-0">
         <div className="w-full max-w-sm space-y-6">
-          <div className="flex items-center gap-2.5 lg:hidden">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Boxes className="size-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">SmartBiz ERP Lite</p>
-              <p className="text-xs text-muted-foreground">Business workspace</p>
-            </div>
+          <div className="lg:hidden">
+            <AuthBrand variant="light" />
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-lg shadow-primary/5 sm:p-8">

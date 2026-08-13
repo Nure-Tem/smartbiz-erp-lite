@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
-  Boxes,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -96,9 +95,13 @@ function NavLinks({
 function Brand() {
   return (
     <div className="flex items-center gap-2.5 border-b border-border px-5 py-[1.15rem]">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-        <Boxes className="size-5" />
-      </div>
+      <img
+        src="/logo-icon.png"
+        alt="SmartBiz"
+        width={36}
+        height={36}
+        className="size-9 shrink-0 rounded-xl object-cover shadow-sm"
+      />
       <div className="min-w-0 leading-tight">
         <p className="truncate text-sm font-semibold text-foreground">SmartBiz ERP</p>
         <p className="truncate text-xs text-muted-foreground">Lite edition</p>
