@@ -86,7 +86,7 @@ function LoginPage() {
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" {...form.register("email")} />
+          <Input id="email" type="email" autoComplete="email" {...form.register("email")} />
           <p className="text-xs text-destructive">{form.formState.errors.email?.message}</p>
         </div>
         <div className="space-y-2">
@@ -99,7 +99,7 @@ function LoginPage() {
               Forgot password?
             </Link>
           </div>
-          <Input id="password" type="password" {...form.register("password")} />
+          <Input id="password" type="password" autoComplete="current-password" {...form.register("password")} />
           <p className="text-xs text-destructive">{form.formState.errors.password?.message}</p>
         </div>
         <Button type="submit" className="w-full" disabled={isLoading}>
