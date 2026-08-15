@@ -25,6 +25,7 @@ import { requireAuth } from "@/lib/route-guards";
 
 
 export const Route = createFileRoute("/inventory")({
+  ssr: false,
   beforeLoad: requireAuth,
   head: () => ({
     meta: [

@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { normalizePhone } from '../phone';
+import { describeSupabaseError } from './errors';
 import type { Customer } from '../mock/types';
 
 const PHONE_TAKEN_ERROR = 'A customer with this phone number already exists.';
@@ -60,7 +61,7 @@ export async function isPhoneTaken(phone: string, excludeId?: string): Promise<b
   const { data, error } = await supabase.from('customers').select('id, phone');
 
   if (error) {
-    throw new Error(`Failed to check phone availability: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'load', 'customer'));
   }
 
   return (data ?? []).some(
@@ -84,7 +85,7 @@ export async function listCustomers(): Promise<Customer[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    throw new Error(`Failed to fetch customers: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'load', 'customer'));
   }
 
   return (data || []).map(mapToCustomer);
@@ -107,7 +108,7 @@ export async function createCustomer(
     .single();
 
   if (error) {
-    throw new Error(`Failed to create customer: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'create', 'customer'));
   }
 
   return mapToCustomer(data);
@@ -134,7 +135,7 @@ export async function updateCustomer(
       .single();
 
     if (existingError) {
-      throw new Error(`Failed to load customer: ${existingError.message}`);
+      throw new Error(describeSupabaseError(existingError, 'load', 'customer'));
     }
 
     const phoneChanged =
@@ -158,7 +159,7 @@ export async function updateCustomer(
     .single();
 
   if (error) {
-    throw new Error(`Failed to update customer: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'update', 'customer'));
   }
 
   return mapToCustomer(data);
@@ -171,6 +172,6 @@ export async function deleteCustomer(id: string): Promise<void> {
   const { error } = await supabase.from('customers').delete().eq('id', id);
 
   if (error) {
-    throw new Error(`Failed to delete customer: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'delete', 'customer'));
   }
 }

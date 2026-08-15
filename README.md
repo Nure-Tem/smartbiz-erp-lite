@@ -228,6 +228,30 @@ npm run build
 
 Output is produced by Vite / TanStack Start into the project build directories (e.g. `.output`). Ensure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set in the build environment.
 
+### Deploying to Vercel
+
+`vercel.json` in the project root contains the minimum required configuration
+(`NITRO_PRESET=vercel`, so TanStack Start's Nitro server builds Vercel's Build
+Output API format instead of the default Cloudflare target).
+
+1. Import the existing GitHub repository into Vercel.
+2. Add the Project Environment Variables (Production **and** Preview):
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+3. Deploy. Framework preset: **Other**; build command `npm run build` (already
+   set in `vercel.json`).
+
+Only the public Supabase URL and anon key belong in the client environment.
+Never add `SUPABASE_SERVICE_ROLE_KEY` or database passwords — the app never
+uses them, and authorization is enforced by Supabase RLS.
+
+### Supabase RLS
+
+The Admin/Cashier authorization model is enforced in the database. Run
+[`docs/supabase-rls.sql`](docs/supabase-rls.sql) once in the Supabase SQL editor
+of the existing project to align the policies (it creates no tables and renames
+nothing).
+
 ---
 
 ## Screenshots

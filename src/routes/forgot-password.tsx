@@ -73,7 +73,7 @@ function ForgotPasswordPage() {
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" {...form.register("email")} />
+          <Input id="email" type="email" autoComplete="email" {...form.register("email")} />
           <p className="text-xs text-destructive">{form.formState.errors.email?.message}</p>
         </div>
         <Button type="submit" className="w-full" disabled={isLoading}>

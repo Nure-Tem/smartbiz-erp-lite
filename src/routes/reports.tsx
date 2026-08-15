@@ -29,6 +29,7 @@ import { currency } from "@/lib/format";
 import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/reports")({
+  ssr: false,
   beforeLoad: requireAuth,
   head: () => ({
     meta: [

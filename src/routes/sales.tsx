@@ -34,6 +34,7 @@ import { customersQuery, productsQuery, salesQuery } from "@/lib/queries";
 import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/sales")({
+  ssr: false,
   beforeLoad: requireAuth,
   head: () => ({
     meta: [
