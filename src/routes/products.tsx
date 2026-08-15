@@ -232,9 +232,11 @@ function ProductsPage() {
       className: "text-right",
       cell: (row) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => openEdit(row)}>
-            <Pencil className="size-4" />
-          </Button>
+          {isAdmin ? (
+            <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => openEdit(row)}>
+              <Pencil className="size-4" />
+            </Button>
+          ) : null}
           {isAdmin ? (
             <Button
               variant="ghost"
@@ -269,10 +271,12 @@ function ProductsPage() {
         title="Products"
         description="Your catalogue with pricing, stock levels and low-stock alerts."
         actions={
+          isAdmin ? (
           <Button onClick={openCreate}>
             <Plus className="size-4" />
             New product
           </Button>
+          ) : null
         }
       />
 

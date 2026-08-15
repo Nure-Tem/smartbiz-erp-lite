@@ -146,9 +146,11 @@ function CategoriesPage() {
       className: "text-right",
       cell: (row) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => openEdit(row)}>
-            <Pencil className="size-4" />
-          </Button>
+          {isAdmin ? (
+            <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => openEdit(row)}>
+              <Pencil className="size-4" />
+            </Button>
+          ) : null}
           {isAdmin ? (
             <Button
               variant="ghost"
@@ -171,10 +173,12 @@ function CategoriesPage() {
         title="Categories"
         description="Group products so reporting and filtering stay tidy."
         actions={
+          isAdmin ? (
           <Button onClick={openCreate}>
             <Plus className="size-4" />
             New category
           </Button>
+          ) : null
         }
       />
 
