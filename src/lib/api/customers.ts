@@ -135,7 +135,7 @@ export async function updateCustomer(
       .single();
 
     if (existingError) {
-      throw new Error(describeSupabaseError(error, 'load', 'customer'));
+      throw new Error(describeSupabaseError(existingError, 'load', 'customer'));
     }
 
     const phoneChanged =
