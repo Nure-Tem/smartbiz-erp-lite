@@ -40,6 +40,7 @@ import { requireAuth } from "@/lib/route-guards";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/products")({
+  ssr: false,
   beforeLoad: requireAuth,
   head: () => ({
     meta: [

@@ -22,6 +22,7 @@ import { saveSettings, type SaveSettingsInput } from "@/lib/api/settings";
 import { setAppCurrency } from "@/lib/format";
 
 export const Route = createFileRoute("/settings")({
+  ssr: false,
   beforeLoad: async () => {
     await requireAuth();
     const user = await getCurrentUser();

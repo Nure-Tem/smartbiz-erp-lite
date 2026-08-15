@@ -31,6 +31,7 @@ import { requireAuth } from "@/lib/route-guards";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/categories")({
+  ssr: false,
   beforeLoad: requireAuth,
   head: () => ({
     meta: [
