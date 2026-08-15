@@ -31,12 +31,12 @@ let products: Product[] = [
 ];
 
 let customers: Customer[] = [
-  { id: "u1", name: "Amara Diallo", phone: "+1 202 555 0142", email: "amara@northside.co", address: "412 Northside Ave, Boston", creditBalance: 120.5, createdAt: "2026-01-06" },
-  { id: "u2", name: "Peter Lindqvist", phone: "+46 70 555 2211", email: "peter@lindq.se", address: "Storgatan 8, Malmö", creditBalance: 0, createdAt: "2026-01-19" },
-  { id: "u3", name: "Rina Sharma", phone: "+91 98 5544 1120", email: "rina.sharma@vertex.in", address: "Sector 21, Pune", creditBalance: 340, createdAt: "2026-02-03" },
-  { id: "u4", name: "Tomás Ferreira", phone: "+351 91 555 8890", email: "tomas@casaverde.pt", address: "Rua do Sol 19, Porto", creditBalance: 58.25, createdAt: "2026-02-17" },
-  { id: "u5", name: "Hana Suzuki", phone: "+81 80 5555 6612", email: "hana@sakuramart.jp", address: "3-8 Shibuya, Tokyo", creditBalance: 0, createdAt: "2026-03-05" },
-  { id: "u6", name: "Grace Owusu", phone: "+233 24 555 7712", email: "grace@accrasupply.gh", address: "Ring Road East, Accra", creditBalance: 210.75, createdAt: "2026-03-21" },
+  { id: "u1", name: "Amara Diallo", phone: "+1 202 555 0142", email: "amara@northside.co", address: "412 Northside Ave, Boston", tinNumber: "", creditBalance: 120.5, createdAt: "2026-01-06" },
+  { id: "u2", name: "Peter Lindqvist", phone: "+46 70 555 2211", email: "peter@lindq.se", address: "Storgatan 8, Malmö", tinNumber: "", creditBalance: 0, createdAt: "2026-01-19" },
+  { id: "u3", name: "Rina Sharma", phone: "+91 98 5544 1120", email: "rina.sharma@vertex.in", address: "Sector 21, Pune", tinNumber: "", creditBalance: 340, createdAt: "2026-02-03" },
+  { id: "u4", name: "Tomás Ferreira", phone: "+351 91 555 8890", email: "tomas@casaverde.pt", address: "Rua do Sol 19, Porto", tinNumber: "", creditBalance: 58.25, createdAt: "2026-02-17" },
+  { id: "u5", name: "Hana Suzuki", phone: "+81 80 5555 6612", email: "hana@sakuramart.jp", address: "3-8 Shibuya, Tokyo", tinNumber: "", creditBalance: 0, createdAt: "2026-03-05" },
+  { id: "u6", name: "Grace Owusu", phone: "+233 24 555 7712", email: "grace@accrasupply.gh", address: "Ring Road East, Accra", tinNumber: "", creditBalance: 210.75, createdAt: "2026-03-21" },
 ];
 
 let sales: Sale[] = [

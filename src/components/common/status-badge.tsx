@@ -1,27 +1,20 @@
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/hooks/use-language";
+import { paymentMethodKey } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
-
-/**
- * Presentation-only badges. They never derive or change data — callers pass
- * the already-computed value from the existing business logic.
- */
-
-const PAYMENT_LABELS: Record<string, string> = {
-  cash: "Cash",
-  bank: "Bank",
-  credit: "Credit",
-  telebirr: "Telebirr",
-};
 
 const PAYMENT_TONES: Record<string, string> = {
   cash: "border-success/40 bg-success/15 text-success-strong",
   bank: "border-primary/40 bg-primary/12 text-primary",
   credit: "border-warning/50 bg-warning/20 text-warning-strong",
   telebirr: "border-telebirr bg-telebirr text-telebirr-foreground",
+  ebirr: "border-primary/50 bg-primary/15 text-primary",
 };
 
 export function PaymentBadge({ method }: { method: string }) {
+  const { t } = useLanguage();
   const key = (method ?? "").toLowerCase();
+  const labelKey = paymentMethodKey(key);
   return (
     <Badge
       variant="outline"
@@ -31,7 +24,7 @@ export function PaymentBadge({ method }: { method: string }) {
       )}
     >
       <span aria-hidden className="size-1.5 rounded-full bg-current opacity-80" />
-      {PAYMENT_LABELS[key] ?? method}
+      {t(labelKey)}
     </Badge>
   );
 }
@@ -50,12 +43,6 @@ const STOCK_TONES: Record<StockLevel, string> = {
   ok: "border-success/40 bg-success/15 text-success-strong",
 };
 
-const STOCK_LABELS: Record<StockLevel, string> = {
-  out: "Out of stock",
-  low: "Low stock",
-  ok: "In stock",
-};
-
 export function StockBadge({
   level,
   label,
@@ -65,6 +52,10 @@ export function StockBadge({
   label?: string | undefined;
   className?: string | undefined;
 }) {
+  const { t } = useLanguage();
+  const defaultLabel =
+    level === "out" ? t("stock.out") : level === "low" ? t("stock.low") : t("stock.inStock");
+
   return (
     <Badge
       variant="outline"
@@ -75,7 +66,7 @@ export function StockBadge({
       )}
     >
       <span aria-hidden className="size-1.5 rounded-full bg-current" />
-      {label ?? STOCK_LABELS[level]}
+      {label ?? defaultLabel}
     </Badge>
   );
 }

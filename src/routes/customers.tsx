@@ -31,6 +31,7 @@ import { currency } from "@/lib/format";
 import type { Customer } from "@/lib/mock/types";
 import { requireAuth } from "@/lib/route-guards";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/hooks/use-language";
 
 export const Route = createFileRoute("/customers")({
   ssr: false,
@@ -51,6 +52,7 @@ const schema = z.object({
   phone: z.string().min(5, "Phone is required"),
   email: z.string().email("Enter a valid email").or(z.literal("")),
   address: z.string().max(160, "Keep it under 160 characters"),
+  tinNumber: z.string().max(50, "Keep it under 50 characters").or(z.literal("")),
   creditBalance: z.coerce.number().min(0, "Must be 0 or more"),
 });
 type FormValues = z.input<typeof schema>;
@@ -60,6 +62,7 @@ const PAGE_SIZE = 8;
 function CustomersPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === "admin";
   const customers = useQuery(customersQuery);
   const [search, setSearch] = useState("");
@@ -70,7 +73,7 @@ function CustomersPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", phone: "", email: "", address: "", creditBalance: 0 },
+    defaultValues: { name: "", phone: "", email: "", address: "", tinNumber: "", creditBalance: 0 },
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["customers"] });
@@ -82,7 +85,7 @@ function CustomersPage() {
     },
     onSuccess: () => {
       invalidate();
-      toast.success(editing ? "Customer updated" : "Customer created");
+      toast.success(editing ? t("customers.updated") : t("customers.created"));
       setDialogOpen(false);
     },
     onError: (error: Error) => {
@@ -96,7 +99,7 @@ function CustomersPage() {
     mutationFn: deleteCustomer,
     onSuccess: () => {
       invalidate();
-      toast.success("Customer deleted");
+      toast.success(t("customers.deleted"));
       setDeleting(null);
     },
     onError: (error: Error) => {
@@ -113,7 +116,8 @@ function CustomersPage() {
         !term ||
         c.name.toLowerCase().includes(term) ||
         c.email.toLowerCase().includes(term) ||
-        c.phone.toLowerCase().includes(term),
+        c.phone.toLowerCase().includes(term) ||
+        c.tinNumber.toLowerCase().includes(term),
     );
   }, [customers.data, search]);
 
@@ -121,7 +125,7 @@ function CustomersPage() {
 
   const openCreate = () => {
     setEditing(null);
-    form.reset({ name: "", phone: "", email: "", address: "", creditBalance: 0 });
+    form.reset({ name: "", phone: "", email: "", address: "", tinNumber: "", creditBalance: 0 });
     setDialogOpen(true);
   };
 
@@ -132,6 +136,7 @@ function CustomersPage() {
       phone: row.phone,
       email: row.email,
       address: row.address,
+      tinNumber: row.tinNumber,
       creditBalance: row.creditBalance,
     });
     setDialogOpen(true);
@@ -144,11 +149,18 @@ function CustomersPage() {
       cell: (row) => (
         <div>
           <p className="font-medium text-foreground">{row.name}</p>
-          <p className="text-xs text-muted-foreground">{row.email || "No email"}</p>
+          <p className="text-xs text-muted-foreground">{row.email || t("common.noEmail")}</p>
         </div>
       ),
     },
-    { key: "phone", header: "Phone", cell: (row) => row.phone },
+    { key: "phone", header: t("common.phone"), cell: (row) => row.phone },
+    {
+      key: "tin",
+      header: t("customers.tin"),
+      cell: (row) => (
+        <span className="text-muted-foreground">{row.tinNumber || "—"}</span>
+      ),
+    },
     {
       key: "address",
       header: "Address",
@@ -156,7 +168,7 @@ function CustomersPage() {
     },
     {
       key: "credit",
-      header: "Credit balance",
+      header: t("customers.creditBalance"),
       cell: (row) => (
         <span className={row.creditBalance > 0 ? "font-medium text-destructive" : "text-muted-foreground"}>
           {currency(row.creditBalance)}
@@ -169,14 +181,14 @@ function CustomersPage() {
       className: "text-right",
       cell: (row) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => openEdit(row)}>
+          <Button variant="ghost" size="icon" aria-label={t("common.edit")} onClick={() => openEdit(row)}>
             <Pencil className="size-4" />
           </Button>
           {isAdmin ? (
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Delete"
+              aria-label={t("common.delete")}
               className="text-destructive"
               onClick={() => setDeleting(row)}
             >
@@ -191,12 +203,12 @@ function CustomersPage() {
   return (
     <AppLayout>
       <PageHeader
-        title="Customers"
-        description="Contact details and outstanding credit for every buyer."
+        title={t("customers.title")}
+        description={t("customers.description")}
         actions={
           <Button onClick={openCreate}>
             <Plus className="size-4" />
-            New customer
+            {t("customers.new")}
           </Button>
         }
       />
@@ -207,7 +219,7 @@ function CustomersPage() {
           setSearch(v);
           setPage(1);
         }}
-        placeholder="Search name, email or phone"
+        placeholder={t("customers.searchPlaceholder")}
       />
 
       <DataTable
@@ -219,9 +231,9 @@ function CustomersPage() {
         emptyState={
           <EmptyState
             icon={Users}
-            title="No customers yet"
-            description="Add your first customer to start tracking sales and credit."
-            actionLabel="New customer"
+            title={t("customers.noCustomers")}
+            description={t("customers.noCustomersDesc")}
+            actionLabel={t("customers.new")}
             onAction={openCreate}
           />
         }
@@ -238,8 +250,8 @@ function CustomersPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit customer" : "New customer"}</DialogTitle>
-            <DialogDescription>Credit balance tracks what the customer still owes.</DialogDescription>
+            <DialogTitle>{editing ? t("customers.edit") : t("customers.new")}</DialogTitle>
+            <DialogDescription>{t("customers.creditDesc")}</DialogDescription>
           </DialogHeader>
           <form
             id="customer-form"
@@ -247,27 +259,32 @@ function CustomersPage() {
             onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))}
           >
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">{t("common.name")}</Label>
               <Input id="name" {...form.register("name")} />
               <p className="text-xs text-destructive">{form.formState.errors.name?.message}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone">{t("common.phone")}</Label>
               <Input id="phone" {...form.register("phone")} />
               <p className="text-xs text-destructive">{form.formState.errors.phone?.message}</p>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("common.email")}</Label>
               <Input id="email" type="email" {...form.register("email")} />
               <p className="text-xs text-destructive">{form.formState.errors.email?.message}</p>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">{t("common.address")}</Label>
               <Textarea id="address" rows={2} {...form.register("address")} />
               <p className="text-xs text-destructive">{form.formState.errors.address?.message}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="creditBalance">Credit balance</Label>
+              <Label htmlFor="tinNumber">{t("customers.tin")}</Label>
+              <Input id="tinNumber" {...form.register("tinNumber")} />
+              <p className="text-xs text-destructive">{form.formState.errors.tinNumber?.message}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="creditBalance">{t("customers.creditBalance")}</Label>
               <Input
                 id="creditBalance"
                 type="number"
@@ -281,10 +298,10 @@ function CustomersPage() {
           </form>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" form="customer-form" disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? "Saving..." : "Save customer"}
+              {saveMutation.isPending ? t("common.saving") : t("customers.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -293,8 +310,8 @@ function CustomersPage() {
       <ConfirmDialog
         open={Boolean(deleting)}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title={`Delete ${deleting?.name ?? "customer"}?`}
-        description="Their sales history stays intact, but the profile is removed."
+        title={deleting ? `${t("common.delete")} ${deleting.name}?` : t("customers.deleteTitle")}
+        description={t("customers.deleteDesc")}
         onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
       />
     </AppLayout>

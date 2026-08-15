@@ -32,6 +32,9 @@ import { currency } from "@/lib/format";
 import { createSale, type Sale } from "@/lib/api/sales";
 import { customersQuery, productsQuery, salesQuery } from "@/lib/queries";
 import { requireAuth } from "@/lib/route-guards";
+import { PAYMENT_METHOD_VALUES } from "@/lib/payment-methods";
+import { useLanguage } from "@/hooks/use-language";
+import { paymentMethodKey } from "@/lib/i18n/translations";
 
 export const Route = createFileRoute("/sales")({
   ssr: false,
@@ -48,13 +51,6 @@ export const Route = createFileRoute("/sales")({
 });
 
 const PAGE_SIZE = 8;
-
-const PAYMENT_METHODS = [
-  { value: "cash", label: "Cash" },
-  { value: "bank", label: "Bank" },
-  { value: "credit", label: "Credit" },
-  { value: "telebirr", label: "Telebirr" },
-] as const;
 
 /** Sentinel for walk-in; maps to customer_id = null in the database. */
 const WALK_IN_VALUE = "__walk_in__";
@@ -77,6 +73,7 @@ function isPartialInventoryFailure(message: string) {
 
 function SalesPage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const sales = useQuery(salesQuery);
   const customers = useQuery(customersQuery);
   const products = useQuery(productsQuery);
@@ -91,7 +88,7 @@ function SalesPage() {
   const [lines, setLines] = useState<LineItem[]>([newLine()]);
 
   const customerName = (id: string | null) =>
-    (customers.data ?? []).find((c) => c.id === id)?.name ?? "Walk-in customer";
+    (customers.data ?? []).find((c) => c.id === id)?.name ?? t("sales.walkIn");
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -145,7 +142,7 @@ function SalesPage() {
       qc.invalidateQueries({ queryKey: ["sales"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["inventory-logs"] });
-      toast.success("Sale recorded");
+      toast.success(t("sales.recorded"));
       setDialogOpen(false);
       resetForm();
     },
@@ -174,10 +171,10 @@ function SalesPage() {
   const columns: Column<Sale>[] = [
     {
       key: "invoice",
-      header: "Invoice",
+      header: t("sales.invoice"),
       cell: (row) => <span className="font-medium text-foreground">{row.invoiceNumber}</span>,
     },
-    { key: "customer", header: "Customer", cell: (row) => customerName(row.customerId) },
+    { key: "customer", header: t("sales.customer"), cell: (row) => customerName(row.customerId) },
     {
       key: "total",
       header: "Total",
@@ -187,19 +184,19 @@ function SalesPage() {
     },
     {
       key: "status",
-      header: "Payment method",
+      header: t("payment.method"),
       cell: (row) => (
         <PaymentBadge method={row.paymentMethod} />
       ),
     },
-    { key: "date", header: "Date", cell: (row) => row.date },
+    { key: "date", header: t("sales.date"), cell: (row) => row.date },
   ];
 
   return (
     <AppLayout>
       <PageHeader
-        title="Sales"
-        description="Invoice history. Recording a sale saves the invoice, deducts stock, and writes an inventory log."
+        title={t("sales.title")}
+        description={t("sales.description")}
         actions={
           <Button
             onClick={() => {
@@ -208,7 +205,7 @@ function SalesPage() {
             }}
           >
             <Plus className="size-4" />
-            Add sale
+            {t("sales.addSale")}
           </Button>
         }
       />
@@ -220,7 +217,7 @@ function SalesPage() {
             setSearch(v);
             setPage(1);
           }}
-          placeholder="Search invoice or customer"
+          placeholder={t("sales.searchPlaceholder")}
         />
         <Select
           value={statusFilter}
@@ -229,14 +226,14 @@ function SalesPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-full sm:w-48" aria-label="Filter by payment method">
-            <SelectValue placeholder="Payment method" />
+          <SelectTrigger className="w-full sm:w-48" aria-label={t("payment.method")}>
+            <SelectValue placeholder={t("payment.method")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All methods</SelectItem>
-            {PAYMENT_METHODS.map(({ value, label }) => (
+            <SelectItem value="all">{t("payment.allMethods")}</SelectItem>
+            {PAYMENT_METHOD_VALUES.map((value) => (
               <SelectItem key={value} value={value}>
-                {label}
+                {t(paymentMethodKey(value))}
               </SelectItem>
             ))}
           </SelectContent>
@@ -252,9 +249,9 @@ function SalesPage() {
         emptyState={
           <EmptyState
             icon={ShoppingCart}
-            title="No sales found"
-            description="Invoices will appear here once sales are recorded."
-            actionLabel="Add sale"
+            title={t("sales.noSales")}
+            description={t("sales.noSalesDesc")}
+            actionLabel={t("sales.addSale")}
             onAction={() => {
               resetForm();
               setDialogOpen(true);
@@ -274,22 +271,20 @@ function SalesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>New sale</DialogTitle>
-            <DialogDescription>
-              Pick a customer, add products and confirm the invoice total.
-            </DialogDescription>
+            <DialogTitle>{t("sales.newSale")}</DialogTitle>
+            <DialogDescription>{t("sales.newSaleDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Customer</Label>
+                <Label>{t("sales.customer")}</Label>
                 <Select value={customerId} onValueChange={setCustomerId}>
-                  <SelectTrigger aria-label="Select customer">
-                    <SelectValue placeholder="Select customer" />
+                  <SelectTrigger aria-label={t("sales.selectCustomer")}>
+                    <SelectValue placeholder={t("sales.selectCustomer")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={WALK_IN_VALUE}>Walk-in customer</SelectItem>
+                    <SelectItem value={WALK_IN_VALUE}>{t("sales.walkIn")}</SelectItem>
                     {(customers.data ?? []).map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name}
@@ -299,15 +294,15 @@ function SalesPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="payment-method">Payment method</Label>
+                <Label htmlFor="payment-method">{t("payment.method")}</Label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger id="payment-method" aria-label="Select payment method">
-                    <SelectValue placeholder="Select payment method" />
+                  <SelectTrigger id="payment-method" aria-label={t("sales.selectPayment")}>
+                    <SelectValue placeholder={t("sales.selectPayment")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {PAYMENT_METHODS.map(({ value, label }) => (
+                    {PAYMENT_METHOD_VALUES.map((value) => (
                       <SelectItem key={value} value={value}>
-                        {label}
+                        {t(paymentMethodKey(value))}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -317,7 +312,7 @@ function SalesPage() {
 
             <div className="space-y-3 rounded-xl border border-border p-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground">Line items</p>
+                <p className="text-sm font-medium text-foreground">{t("sales.lineItems")}</p>
                 <Button
                   type="button"
                   variant="outline"
@@ -325,7 +320,7 @@ function SalesPage() {
                   onClick={() => setLines((prev) => [...prev, newLine()])}
                 >
                   <Plus className="size-4" />
-                  Add item
+                  {t("sales.addItem")}
                 </Button>
               </div>
 
@@ -339,8 +334,8 @@ function SalesPage() {
                       )
                     }
                   >
-                    <SelectTrigger aria-label="Select product">
-                      <SelectValue placeholder="Select product" />
+                    <SelectTrigger aria-label={t("sales.selectProduct")}>
+                      <SelectValue placeholder={t("sales.selectProduct")} />
                     </SelectTrigger>
                     <SelectContent>
                       {(products.data ?? []).map((p) => (
@@ -353,7 +348,7 @@ function SalesPage() {
                   <Input
                     type="number"
                     min={1}
-                    aria-label="Quantity"
+                    aria-label={t("common.quantity")}
                     value={line.quantity}
                     onChange={(e) =>
                       setLines((prev) =>
@@ -383,7 +378,7 @@ function SalesPage() {
               ))}
 
               <div className="flex items-center justify-between rounded-lg border border-primary/25 bg-primary/5 px-3 py-3">
-                <p className="text-sm font-medium text-muted-foreground">Total</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("common.total")}</p>
                 <p className="text-2xl font-semibold tabular-nums tracking-tight text-primary">
                   {currency(total)}
                 </p>
@@ -393,10 +388,10 @@ function SalesPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button disabled={!canSubmit || saveSale.isPending} onClick={() => saveSale.mutate()}>
-              {saveSale.isPending ? "Saving..." : "Save sale"}
+              {saveSale.isPending ? t("common.saving") : t("sales.saveSale")}
             </Button>
           </DialogFooter>
         </DialogContent>

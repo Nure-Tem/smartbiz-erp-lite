@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
+import { LanguageSwitcher } from "@/components/common/language-switcher";
+import { useLanguage } from "@/hooks/use-language";
 
 function AuthBrand({ variant = "light" }: { variant?: "light" | "dark" }) {
+  const { t } = useLanguage();
   const isDark = variant === "dark";
 
   return (
@@ -29,7 +32,7 @@ function AuthBrand({ variant = "light" }: { variant?: "light" | "dark" }) {
               : "text-xs text-muted-foreground"
           }
         >
-          Business workspace
+          {t("brand.businessWorkspace")}
         </p>
       </div>
     </div>
@@ -47,6 +50,8 @@ export function AuthLayout({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  const { t } = useLanguage();
+
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden overflow-hidden bg-primary lg:flex lg:flex-col lg:justify-between lg:p-10 lg:text-primary-foreground">
@@ -65,17 +70,20 @@ export function AuthLayout({
 
         <div className="relative max-w-md space-y-3">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight">
-            Sign in to manage inventory, sales and customers.
+            {t("auth.heroTitle")}
           </h2>
           <p className="text-sm leading-relaxed text-primary-foreground/80">
-            A focused workspace for day-to-day stock control, invoicing and team operations.
+            {t("auth.heroSubtitle")}
           </p>
         </div>
 
-        <p className="relative text-xs text-primary-foreground/60">© 2026 SmartBiz ERP Lite</p>
+        <p className="relative text-xs text-primary-foreground/60">{t("auth.copyright")}</p>
       </div>
 
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 sm:p-8 lg:min-h-0">
+        <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
+          <LanguageSwitcher />
+        </div>
         <div className="w-full max-w-sm space-y-6">
           <div className="lg:hidden">
             <AuthBrand variant="light" />
@@ -92,7 +100,7 @@ export function AuthLayout({
           {footer ? <div className="text-center text-sm text-muted-foreground">{footer}</div> : null}
 
           <p className="pt-2 text-center text-xs text-muted-foreground lg:hidden">
-            © 2026 SmartBiz ERP Lite
+            {t("auth.copyright")}
           </p>
         </div>
       </div>

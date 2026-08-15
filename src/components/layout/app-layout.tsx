@@ -33,17 +33,25 @@ import { signOut } from "@/lib/auth";
 import { setAppCurrency } from "@/lib/format";
 import { settingsQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/hooks/use-language";
+import { LanguageSwitcher } from "@/components/common/language-switcher";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
-const NAV = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/products", label: "Products", icon: Package },
-  { to: "/categories", label: "Categories", icon: Tags },
-  { to: "/customers", label: "Customers", icon: Users },
-  { to: "/sales", label: "Sales", icon: ShoppingCart },
-  { to: "/inventory", label: "Inventory", icon: Warehouse },
-  { to: "/reports", label: "Reports", icon: BarChart3 },
-  { to: "/settings", label: "Settings", icon: Settings, adminOnly: true },
-] as const;
+const NAV: {
+  to: string;
+  labelKey: TranslationKey;
+  icon: typeof LayoutDashboard;
+  adminOnly?: boolean;
+}[] = [
+  { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { to: "/products", labelKey: "nav.products", icon: Package },
+  { to: "/categories", labelKey: "nav.categories", icon: Tags },
+  { to: "/customers", labelKey: "nav.customers", icon: Users },
+  { to: "/sales", labelKey: "nav.sales", icon: ShoppingCart },
+  { to: "/inventory", labelKey: "nav.inventory", icon: Warehouse },
+  { to: "/reports", labelKey: "nav.reports", icon: BarChart3 },
+  { to: "/settings", labelKey: "nav.settings", icon: Settings, adminOnly: true },
+];
 
 function NavLinks({
   onNavigate,
@@ -53,14 +61,14 @@ function NavLinks({
   isAdmin: boolean;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { t } = useLanguage();
 
   return (
     <nav aria-label="Main navigation" className="flex flex-col gap-0.5 px-3 pb-4">
       <p className="px-3 pb-2 pt-1 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground">
-        Workspace
+        {t("nav.workspace")}
       </p>
-      {NAV.filter((item) => !("adminOnly" in item && item.adminOnly) || isAdmin).map(
-        ({ to, label, icon: Icon }) => {
+      {NAV.filter((item) => !item.adminOnly || isAdmin).map(({ to, labelKey, icon: Icon }) => {
           const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
           return (
             <Link
@@ -83,16 +91,16 @@ function NavLinks({
                 )}
               />
               <Icon className="size-4 shrink-0" />
-              <span className="truncate">{label}</span>
+              <span className="truncate">{t(labelKey)}</span>
             </Link>
           );
-        },
-      )}
+        })}
     </nav>
   );
 }
 
 function Brand() {
+  const { t } = useLanguage();
   return (
     <div className="flex items-center gap-2.5 border-b border-border px-5 py-[1.15rem]">
       <img
@@ -104,7 +112,7 @@ function Brand() {
       />
       <div className="min-w-0 leading-tight">
         <p className="truncate text-sm font-semibold text-foreground">SmartBiz ERP</p>
-        <p className="truncate text-xs text-muted-foreground">Lite edition</p>
+        <p className="truncate text-xs text-muted-foreground">{t("brand.liteEdition")}</p>
       </div>
     </div>
   );
@@ -117,6 +125,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { theme, toggle } = useTheme();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const settings = useQuery(settingsQuery);
   const isAdmin = user?.role === "admin";
 
@@ -127,11 +136,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, [settings.data?.currency]);
 
   const displayName = authLoading
-    ? "Loading..."
-    : user?.name?.trim() || "Profile unavailable";
+    ? t("nav.loading")
+    : user?.name?.trim() || t("nav.profileUnavailable");
   const displayEmail = authLoading
-    ? "Checking session..."
-    : user?.email?.trim() || "Unable to load profile";
+    ? t("nav.checkingSession")
+    : user?.email?.trim() || t("nav.unableLoadProfile");
 
   const initials = (user?.name ?? "?")
     .split(" ")
@@ -161,13 +170,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
             variant="ghost"
             size="icon"
             className="lg:hidden"
-            aria-label="Open navigation"
+            aria-label={t("nav.openNav")}
             onClick={() => setMobileOpen(true)}
           >
             <Menu className="size-5" />
           </Button>
 
           <div className="ml-auto flex items-center gap-1.5">
+            <LanguageSwitcher />
             <Button
               variant="ghost"
               size="icon"
@@ -181,7 +191,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  aria-label="Open account menu"
+                  aria-label={t("nav.openAccount")}
                   className="h-11 gap-2.5 rounded-full px-1.5 sm:rounded-lg sm:px-2"
                 >
                   <Avatar className="size-8">
@@ -215,7 +225,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 {isAdmin ? (
                   <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
                     <Settings className="size-4" />
-                    Settings
+                    {t("nav.settings")}
                   </DropdownMenuItem>
                 ) : null}
                 <DropdownMenuItem
@@ -236,7 +246,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   disabled={isSigningOut}
                 >
                   <LogOut className="size-4" />
-                  {isSigningOut ? "Signing out..." : "Sign out"}
+                  {isSigningOut ? t("nav.signingOut") : t("nav.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

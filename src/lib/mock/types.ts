@@ -27,6 +27,7 @@ export interface Customer {
   phone: string;
   email: string;
   address: string;
+  tinNumber: string;
   creditBalance: number;
   createdAt: string;
 }

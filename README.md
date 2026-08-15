@@ -23,7 +23,7 @@ The application is intended for teams that need a clean, browser-based tool for:
 - Tracking products and categories
 - Recording sales and deducting stock
 - Monitoring inventory movements
-- Managing customers and payment methods (including Telebirr)
+- Managing customers and payment methods (including Telebirr and eBirr)
 - Viewing dashboard and report summaries
 
 ---
@@ -35,7 +35,7 @@ The application is intended for teams that need a clean, browser-based tool for:
 | **Dashboard** | Sales trends, recent invoices, and low-stock overview |
 | **Products** | Catalogue with pricing, SKU, stock levels, and low-stock thresholds |
 | **Categories** | Organize products into categories |
-| **Customers** | Customer records with Ethiopian phone normalization |
+| **Customers** | Customer records with Ethiopian phone normalization and optional TIN Number |
 | **Sales** | Create invoices, choose payment method, deduct stock, write inventory logs |
 | **Inventory** | Stock health across the catalogue and recent stock movements |
 | **Reports** | Analytics views backed by live sales and inventory data |
@@ -43,7 +43,11 @@ The application is intended for teams that need a clean, browser-based tool for:
 | **Authentication** | Supabase Auth — sign in, register, password recovery, auth callback |
 | **Roles** | `admin` and `cashier` from the `profiles` table, with UI gating |
 
-**Payment methods supported in the app:** Cash, Bank, Credit, Telebirr.
+**Payment methods supported in the app:** Cash, Bank, Credit, Telebirr, and eBirr.
+
+Recorded payment methods only — SmartBiz does not process real mobile-money transfers. eBirr is a label for how a sale was paid, not a payment gateway integration.
+
+**Languages:** English (default), Amharic (አማርኛ), and Afaan Oromoo. UI text is translated; database values (product names, customer names, SKUs, etc.) are not.
 
 ---
 

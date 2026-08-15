@@ -15,6 +15,7 @@ interface CustomerRow {
   phone: string;
   email: string;
   address: string;
+  tin_number: string | null;
   credit_balance: number;
   created_at: string;
 }
@@ -29,6 +30,7 @@ function mapToCustomer(row: CustomerRow): Customer {
     phone: row.phone,
     email: row.email,
     address: row.address,
+    tinNumber: row.tin_number ?? '',
     creditBalance: row.credit_balance,
     createdAt: row.created_at,
   };
@@ -47,6 +49,7 @@ function mapFromCustomer(
     phone: trimmedPhone ? normalizePhone(trimmedPhone) : "",
     email: customer.email,
     address: customer.address,
+    tin_number: customer.tinNumber.trim() || null,
     credit_balance: customer.creditBalance,
   };
 }
@@ -149,6 +152,9 @@ export async function updateCustomer(
   }
   if (input.email !== undefined) updateData.email = input.email;
   if (input.address !== undefined) updateData.address = input.address;
+  if (input.tinNumber !== undefined) {
+    updateData.tin_number = input.tinNumber.trim() || null;
+  }
   if (input.creditBalance !== undefined) updateData.credit_balance = input.creditBalance;
 
   const { data, error } = await supabase
