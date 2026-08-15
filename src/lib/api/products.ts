@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { describeSupabaseError } from './errors';
 import type { Product } from '../mock/types';
 
 /**
@@ -62,7 +63,7 @@ export async function listProducts(): Promise<Product[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    throw new Error(`Failed to fetch products: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'load', 'product'));
   }
 
   return (data || []).map(mapToProduct);
@@ -83,7 +84,7 @@ export async function createProduct(
     .single();
 
   if (error) {
-    throw new Error(`Failed to create product: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'create', 'product'));
   }
 
   return mapToProduct(data);
@@ -115,7 +116,7 @@ export async function updateProduct(
     .single();
 
   if (error) {
-    throw new Error(`Failed to update product: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'update', 'product'));
   }
 
   return mapToProduct(data);
@@ -131,6 +132,6 @@ export async function deleteProduct(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) {
-    throw new Error(`Failed to delete product: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'delete', 'product'));
   }
 }

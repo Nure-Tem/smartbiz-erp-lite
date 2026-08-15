@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { describeSupabaseError } from './errors';
 import type { Category } from '../mock/types';
 
 /**
@@ -44,7 +45,7 @@ export async function listCategories(): Promise<Category[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    throw new Error(`Failed to fetch categories: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'load', 'category'));
   }
 
   return (data || []).map(mapToCategory);
@@ -65,7 +66,7 @@ export async function createCategory(
     .single();
 
   if (error) {
-    throw new Error(`Failed to create category: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'create', 'category'));
   }
 
   return mapToCategory(data);
@@ -91,7 +92,7 @@ export async function updateCategory(
     .single();
 
   if (error) {
-    throw new Error(`Failed to update category: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'update', 'category'));
   }
 
   return mapToCategory(data);
@@ -107,6 +108,6 @@ export async function deleteCategory(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) {
-    throw new Error(`Failed to delete category: ${error.message}`);
+    throw new Error(describeSupabaseError(error, 'delete', 'category'));
   }
 }
