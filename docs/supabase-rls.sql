@@ -51,8 +51,8 @@ drop policy if exists categories_write on public.categories;
 create policy categories_write on public.categories for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
 
--- products: everyone signed in reads; admin writes.
--- Cashier stock deduction happens through sales, see products_stock_update below.
+-- products: everyone signed in reads; admin writes catalog fields.
+-- Cashier sale stock deduction uses public.deduct_stock_for_sale() (SECURITY DEFINER).
 drop policy if exists products_select on public.products;
 create policy products_select on public.products for select to authenticated using (true);
 drop policy if exists products_insert on public.products;
@@ -60,7 +60,7 @@ create policy products_insert on public.products for insert to authenticated
   with check (public.is_admin());
 drop policy if exists products_update on public.products;
 create policy products_update on public.products for update to authenticated
-  using (true) with check (true);  -- stock deduction by cashiers during a sale
+  using (public.is_admin()) with check (public.is_admin());
 drop policy if exists products_delete on public.products;
 create policy products_delete on public.products for delete to authenticated
   using (public.is_admin());

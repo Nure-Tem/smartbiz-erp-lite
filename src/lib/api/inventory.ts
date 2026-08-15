@@ -79,6 +79,40 @@ export interface StockMovementInput {
   createdBy: string | null;
 }
 
+export interface SaleStockDeductionResult {
+  product_id: string;
+  product_name: string;
+  previous_stock: number;
+  new_stock: number;
+  quantity: number;
+}
+
+/**
+ * Atomically deduct stock and write an inventory_logs row for a sale.
+ * Requires public.deduct_stock_for_sale() in Supabase (see docs/supabase-sale-stock-rpc.sql).
+ */
+export async function deductStockForSale(
+  productId: string,
+  quantity: number,
+  reason = 'Sale',
+): Promise<SaleStockDeductionResult> {
+  const { data, error } = await supabase.rpc('deduct_stock_for_sale', {
+    product_id: productId,
+    quantity,
+    reason,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data || typeof data !== 'object') {
+    throw new Error('Stock deduction returned no data');
+  }
+
+  return data as SaleStockDeductionResult;
+}
+
 /** Insert an inventory log for a completed sale using movement_type = "sale". */
 export async function createSaleInventoryLog(input: StockMovementInput): Promise<void> {
   const { error } = await supabase.from('inventory_logs').insert({

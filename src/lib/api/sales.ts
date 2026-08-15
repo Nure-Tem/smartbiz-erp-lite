@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { createSaleInventoryLog } from './inventory';
+import { deductStockForSale } from './inventory';
 
 
 /**
@@ -254,36 +254,17 @@ export async function createSale(input: CreateSaleInput): Promise<Sale> {
     throw new Error(`Failed to create sale items: ${itemsError.message}`);
   }
 
-  // ---- Stock deduction + inventory logs (after the sale is persisted) ----
+  // ---- Stock deduction via RPC (after the sale is persisted) ----
   const stockFailures: string[] = [];
 
   for (const [productId, quantity] of requestedByProduct) {
     const product = stockById.get(productId)!;
-    const previousStock = product.stock;
-    const newStock = previousStock - quantity;
-
-    const { error: updateError } = await supabase
-      .from('products')
-      .update({ current_stock: newStock })
-      .eq('id', productId);
-
-    if (updateError) {
-      stockFailures.push(`${product.name}: ${updateError.message}`);
-      continue;
-    }
 
     try {
-      await createSaleInventoryLog({
-        productId,
-        quantity,
-        previousStock,
-        newStock,
-        reason: 'Sale',
-        createdBy: authData.user.id,
-      });
-    } catch (logError) {
+      await deductStockForSale(productId, quantity, 'Sale');
+    } catch (stockError) {
       stockFailures.push(
-        `${product.name}: ${logError instanceof Error ? logError.message : 'inventory log failed'}`,
+        `${product.name}: ${stockError instanceof Error ? stockError.message : 'stock deduction failed'}`,
       );
     }
   }
