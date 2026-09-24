@@ -5,7 +5,7 @@ Lightweight inventory and sales management for small and medium businesses — b
 **Repository:** [github.com/Nure-Tem/smartbiz-frontend](https://github.com/Nure-Tem/smartbiz-frontend)
 
 | Area | Stack |
-| --- | --- |
+| --- | ---- |
 | UI | React 19 · TypeScript · Vite · Tailwind CSS · shadcn/ui |
 | Data | TanStack Query · Supabase |
 | Routing | TanStack Router · TanStack Start |
